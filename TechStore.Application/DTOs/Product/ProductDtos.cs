@@ -29,6 +29,7 @@ namespace TechStore.Application.DTOs.Product
         [MaxLength(200)]
         public string Name { get; set; } = string.Empty;
 
+        [MaxLength(2000)]
         public string? Description { get; set; }
 
         [Required]
@@ -41,6 +42,8 @@ namespace TechStore.Application.DTOs.Product
         [Required]
         public int CategoryId { get; set; }
 
+        [MaxLength(500)]
+        [Url]
         public string? ImageUrl { get; set; }
 
         public List<CreateProductSpecDto>? Specs { get; set; }
@@ -63,6 +66,7 @@ namespace TechStore.Application.DTOs.Product
         [MaxLength(200)]
         public string Name { get; set; } = string.Empty;
 
+        [MaxLength(2000)]
         public string? Description { get; set; }
 
         [Required]
@@ -75,6 +79,8 @@ namespace TechStore.Application.DTOs.Product
         [Required]
         public int CategoryId { get; set; }
 
+        [MaxLength(500)]
+        [Url]
         public string? ImageUrl { get; set; }
 
         public List<CreateProductSpecDto>? Specs { get; set; }
@@ -91,7 +97,10 @@ namespace TechStore.Application.DTOs.Product
         public decimal? MaxPrice { get; set; }
         public string? SortBy { get; set; } = "CreatedAt"; // Name, Price, CreatedAt
         public bool SortDescending { get; set; } = true;
+        [Range(1, int.MaxValue)]
         public int Page { get; set; } = 1;
+
+        [Range(1, 50, ErrorMessage = "PageSize must be between 1 and 50")]
         public int PageSize { get; set; } = 10;
     }
 

@@ -88,7 +88,7 @@ INSERT INTO Users (Username, Email, PasswordHash, FullName, Role)
 VALUES (
     'admin',
     'admin@techstore.com',
-    '$2a$11$K7RqFGDSQXKhGCVOqZV9qe5K0bY9zP2tVsR8L1mK7jZxRV44mmPbm',
+    '$2a$11$UZTHe9ReIRkPL9ZyGdjyHeIfb6idSDCVUey2XhGhCTkkawt7hD/TO',
     'Admin TechStore',
     'Admin'
 );

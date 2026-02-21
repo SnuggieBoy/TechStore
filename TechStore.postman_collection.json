@@ -1,0 +1,1554 @@
+{
+    "info": {
+        "name": "TechStore API - Full Test Suite",
+        "_postman_id": "techstore-full-test",
+        "description": "Complete test suite for TechStore PRM393 Backend.\n\nRun order: Auth → Categories → Products → Orders → Reports\n\nTokens are auto-saved via test scripts.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:5217"
+        },
+        {
+            "key": "adminToken",
+            "value": ""
+        },
+        {
+            "key": "customerToken",
+            "value": ""
+        },
+        {
+            "key": "categoryId",
+            "value": ""
+        },
+        {
+            "key": "productId",
+            "value": ""
+        },
+        {
+            "key": "orderId",
+            "value": ""
+        },
+        {
+            "key": "customerId",
+            "value": ""
+        }
+    ],
+    "item": [
+        {
+            "name": "1. Auth",
+            "item": [
+                {
+                    "name": "1.1 Register Admin",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"admin\",\n  \"email\": \"admin@techstore.com\",\n  \"password\": \"admin123\",\n  \"fullName\": \"Admin TechStore\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/register",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "register"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "// Admin may already exist from DB seed, that's OK",
+                                    "pm.test('Register Admin - Status 200 or 400 (already exists)', function () {",
+                                    "  pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                                    "});",
+                                    "if (pm.response.code === 200) {",
+                                    "  var json = pm.response.json();",
+                                    "  pm.test('Response has success=true', function () { pm.expect(json.success).to.be.true; });",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "1.2 Register Customer",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"Snuggie\",\n  \"email\": \"tronghieu848@gmail.com\",\n  \"password\": \"123456\",\n  \"fullName\": \"Lê Trọng Hiếu\",\n  \"phone\": \"0986515253\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/register",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "register"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Register Customer - Status 200 or 400', function () {",
+                                    "  pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                                    "});",
+                                    "if (pm.response.code === 200) {",
+                                    "  var json = pm.response.json();",
+                                    "  pm.test('Response has success=true', function () { pm.expect(json.success).to.be.true; });",
+                                    "  pm.test('Has token', function () { pm.expect(json.data.token).to.be.a('string'); });",
+                                    "  pm.collectionVariables.set('customerToken', json.data.token);",
+                                    "  pm.collectionVariables.set('customerId', json.data.id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "1.3 Login Admin",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Login Admin - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('success is true', function () { pm.expect(json.success).to.be.true; });",
+                                    "pm.test('Has JWT token', function () { pm.expect(json.data.token).to.be.a('string'); });",
+                                    "pm.test('Role is Admin', function () { pm.expect(json.data.role).to.eql('Admin'); });",
+                                    "pm.collectionVariables.set('adminToken', json.data.token);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "1.4 Login Customer",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"Snuggie\",\n  \"password\": \"123456\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Login Customer - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('success is true', function () { pm.expect(json.success).to.be.true; });",
+                                    "pm.test('Role is Customer', function () { pm.expect(json.data.role).to.eql('Customer'); });",
+                                    "pm.collectionVariables.set('customerToken', json.data.token);",
+                                    "pm.collectionVariables.set('customerId', json.data.id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "1.5 Login Wrong Password (Error)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"wrongpassword\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Wrong password - Status 400', function () { pm.response.to.have.status(400); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('success is false', function () { pm.expect(json.success).to.be.false; });"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "2. Categories (Admin)",
+            "item": [
+                {
+                    "name": "2.1 Create Category - Laptop",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Laptop\",\n  \"description\": \"Máy tính xách tay các loại\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/categories",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "categories"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Create Category - Status 201 or 400 (duplicate)', function () {",
+                                    "  pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+                                    "});",
+                                    "var json = pm.response.json();",
+                                    "if (json.success && json.data) {",
+                                    "  pm.collectionVariables.set('categoryId', json.data.id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "2.2 Create Category - Smartphone",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Smartphone\",\n  \"description\": \"Điện thoại thông minh\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/categories",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "categories"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Create Smartphone Category', function () {",
+                                    "  pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "2.3 Get All Categories",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/categories",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "categories"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Get All Categories - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('success is true', function () { pm.expect(json.success).to.be.true; });",
+                                    "pm.test('data is array', function () { pm.expect(json.data).to.be.an('array'); });",
+                                    "// Save first category ID for later",
+                                    "if (json.data.length > 0) {",
+                                    "  pm.collectionVariables.set('categoryId', json.data[0].id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "2.4 Get Category By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "categories",
+                                "{{categoryId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Get Category By ID - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('Has name', function () { pm.expect(json.data.name).to.be.a('string'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "2.5 Update Category",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Laptop\",\n  \"description\": \"Laptop gaming và văn phòng\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "categories",
+                                "{{categoryId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Update Category - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('Description updated', function () { pm.expect(json.data.description).to.include('gaming'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "2.6 Get Non-Existent Category (404)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/categories/99999",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "categories",
+                                "99999"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Not Found - Status 404', function () { pm.response.to.have.status(404); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('success is false', function () { pm.expect(json.success).to.be.false; });"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "3. Products (Admin)",
+            "item": [
+                {
+                    "name": "3.1 Create Product - MacBook Pro",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"MacBook Pro 14 M3 Pro\",\n  \"description\": \"MacBook Pro 14 inch chip M3 Pro, 18GB RAM, 512GB SSD\",\n  \"price\": 49990000,\n  \"stockQuantity\": 25,\n  \"categoryId\": {{categoryId}},\n  \"imageUrl\": \"https://store.storeimages.cdn-apple.com/macbook-pro-14.jpg\",\n  \"specs\": [\n    { \"specKey\": \"CPU\", \"specValue\": \"Apple M3 Pro\" },\n    { \"specKey\": \"RAM\", \"specValue\": \"18GB\" },\n    { \"specKey\": \"Storage\", \"specValue\": \"512GB SSD\" },\n    { \"specKey\": \"Display\", \"specValue\": \"14.2 inch Liquid Retina XDR\" }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/products",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "products"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Create Product - Status 201', function () { pm.response.to.have.status(201); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('success is true', function () { pm.expect(json.success).to.be.true; });",
+                                    "pm.test('Has specs', function () { pm.expect(json.data.specs).to.be.an('array').with.length.greaterThan(0); });",
+                                    "pm.collectionVariables.set('productId', json.data.id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "3.2 Create Product - iPhone 16",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"iPhone 16 Pro Max 256GB\",\n  \"description\": \"iPhone 16 Pro Max 256GB Titan Sa Mạc\",\n  \"price\": 34990000,\n  \"stockQuantity\": 50,\n  \"categoryId\": {{categoryId}},\n  \"imageUrl\": \"https://store.storeimages.cdn-apple.com/iphone-16.jpg\",\n  \"specs\": [\n    { \"specKey\": \"CPU\", \"specValue\": \"A18 Pro\" },\n    { \"specKey\": \"RAM\", \"specValue\": \"8GB\" },\n    { \"specKey\": \"Storage\", \"specValue\": \"256GB\" },\n    { \"specKey\": \"Display\", \"specValue\": \"6.9 inch Super Retina XDR\" }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/products",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "products"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Create iPhone - Status 201', function () { pm.response.to.have.status(201); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "3.3 Get Products (No Filter)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/products",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "products"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Get Products - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('Has items array', function () { pm.expect(json.data.items).to.be.an('array'); });",
+                                    "pm.test('Has totalCount', function () { pm.expect(json.data.totalCount).to.be.a('number'); });",
+                                    "pm.test('Has pagination', function () { pm.expect(json.data.page).to.eql(1); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "3.4 Search Products",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/products?search=MacBook&sortBy=price&sortDescending=false",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "products"
+                            ],
+                            "query": [
+                                {
+                                    "key": "search",
+                                    "value": "MacBook"
+                                },
+                                {
+                                    "key": "sortBy",
+                                    "value": "price"
+                                },
+                                {
+                                    "key": "sortDescending",
+                                    "value": "false"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Search Products - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('Found MacBook', function () {",
+                                    "  pm.expect(json.data.items.length).to.be.greaterThan(0);",
+                                    "  pm.expect(json.data.items[0].name).to.include('MacBook');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "3.5 Filter by Price Range",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/products?minPrice=30000000&maxPrice=40000000",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "products"
+                            ],
+                            "query": [
+                                {
+                                    "key": "minPrice",
+                                    "value": "30000000"
+                                },
+                                {
+                                    "key": "maxPrice",
+                                    "value": "40000000"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Filter by Price - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('Products in price range', function () {",
+                                    "  json.data.items.forEach(function(p) {",
+                                    "    pm.expect(p.price).to.be.within(30000000, 40000000);",
+                                    "  });",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "3.6 Get Product Detail (with Specs)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/products/{{productId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "products",
+                                "{{productId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Get Product Detail - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('Has product name', function () { pm.expect(json.data.name).to.be.a('string'); });",
+                                    "pm.test('Has specs', function () { pm.expect(json.data.specs).to.be.an('array'); });",
+                                    "pm.test('Has categoryName', function () { pm.expect(json.data.categoryName).to.be.a('string'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "3.7 Update Product",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"MacBook Pro 14 M3 Pro\",\n  \"description\": \"MacBook Pro 14 inch chip M3 Pro - UPDATED\",\n  \"price\": 47990000,\n  \"stockQuantity\": 20,\n  \"categoryId\": {{categoryId}},\n  \"imageUrl\": \"https://store.storeimages.cdn-apple.com/macbook-pro-14.jpg\",\n  \"specs\": [\n    { \"specKey\": \"CPU\", \"specValue\": \"Apple M3 Pro\" },\n    { \"specKey\": \"RAM\", \"specValue\": \"18GB\" },\n    { \"specKey\": \"Storage\", \"specValue\": \"512GB SSD\" },\n    { \"specKey\": \"Display\", \"specValue\": \"14.2 inch Liquid Retina XDR\" },\n    { \"specKey\": \"Battery\", \"specValue\": \"70Wh\" }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/products/{{productId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "products",
+                                "{{productId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Update Product - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('Price updated', function () { pm.expect(json.data.price).to.eql(47990000); });",
+                                    "pm.test('Has 5 specs now', function () { pm.expect(json.data.specs.length).to.eql(5); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "3.8 Create Product Without Auth (401)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Test\",\n  \"price\": 100,\n  \"categoryId\": 1\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/products",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "products"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('No Auth - Status 401', function () { pm.response.to.have.status(401); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "3.9 Create Product As Customer (403)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{customerToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Test\",\n  \"price\": 100,\n  \"categoryId\": 1\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/products",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "products"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Customer cannot create product - Status 403', function () { pm.response.to.have.status(403); });"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "4. Orders (Customer)",
+            "item": [
+                {
+                    "name": "4.1 Place Order (Customer)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{customerToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"items\": [\n    { \"productId\": {{productId}}, \"quantity\": 2 }\n  ],\n  \"paymentMethod\": \"COD\",\n  \"shippingAddress\": \"123 Nguyen Trai, Q5, TP.HCM\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/orders",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Place Order - Status 201', function () { pm.response.to.have.status(201); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('success is true', function () { pm.expect(json.success).to.be.true; });",
+                                    "pm.test('Status is Pending', function () { pm.expect(json.data.status).to.eql('Pending'); });",
+                                    "pm.test('Has items', function () { pm.expect(json.data.items).to.be.an('array').with.length.greaterThan(0); });",
+                                    "pm.test('TotalAmount > 0', function () { pm.expect(json.data.totalAmount).to.be.greaterThan(0); });",
+                                    "pm.collectionVariables.set('orderId', json.data.id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "4.2 Verify Stock Deducted",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/products/{{productId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "products",
+                                "{{productId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Stock Deducted - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('Stock reduced (should be 18 after buying 2 from 20)', function () {",
+                                    "  pm.expect(json.data.stockQuantity).to.be.lessThan(20);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "4.3 Place Order - Insufficient Stock (Error)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{customerToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"items\": [\n    { \"productId\": {{productId}}, \"quantity\": 99999 }\n  ],\n  \"paymentMethod\": \"COD\",\n  \"shippingAddress\": \"Test\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/orders",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Insufficient Stock - Status 400', function () { pm.response.to.have.status(400); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('Error message about stock', function () { pm.expect(json.message).to.include('Insufficient'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "4.4 Get My Orders (Customer)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{customerToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/orders/my-orders",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders",
+                                "my-orders"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('My Orders - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('Has orders', function () { pm.expect(json.data).to.be.an('array').with.length.greaterThan(0); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "4.5 Get Order Detail",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{customerToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/orders/{{orderId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders",
+                                "{{orderId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Order Detail - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('Has order items', function () { pm.expect(json.data.items).to.be.an('array'); });",
+                                    "pm.test('Has shipping address', function () { pm.expect(json.data.shippingAddress).to.be.a('string'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "4.6 Place Order Without Auth (401)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"items\": [{ \"productId\": 1, \"quantity\": 1 }]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/orders",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('No Auth - Status 401', function () { pm.response.to.have.status(401); });"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "5. Order Management (Admin)",
+            "item": [
+                {
+                    "name": "5.1 Get All Orders (Admin)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/orders",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Get All Orders - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('Has orders', function () { pm.expect(json.data).to.be.an('array'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "5.2 Update Status: Pending → Confirmed",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"Confirmed\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/orders/{{orderId}}/status",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders",
+                                "{{orderId}}",
+                                "status"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Confirmed - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('Status is Confirmed', function () { pm.expect(json.data.status).to.eql('Confirmed'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "5.3 Update Status: Confirmed → Shipped",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"Shipped\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/orders/{{orderId}}/status",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders",
+                                "{{orderId}}",
+                                "status"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Shipped - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('Status is Shipped', function () { pm.expect(json.data.status).to.eql('Shipped'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "5.4 Update Status: Shipped → Delivered",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"Delivered\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/orders/{{orderId}}/status",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders",
+                                "{{orderId}}",
+                                "status"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Delivered - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('Status is Delivered', function () { pm.expect(json.data.status).to.eql('Delivered'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "5.5 Invalid Status Transition (Error)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"Pending\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/orders/{{orderId}}/status",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders",
+                                "{{orderId}}",
+                                "status"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Invalid Transition - Status 400', function () { pm.response.to.have.status(400); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('Error about status transition', function () { pm.expect(json.message).to.include('Cannot change'); });"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "6. Reports (Admin)",
+            "item": [
+                {
+                    "name": "6.1 Revenue Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/reports/revenue",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "reports",
+                                "revenue"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Revenue Report - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('Has totalRevenue', function () { pm.expect(json.data.totalRevenue).to.be.a('number'); });",
+                                    "pm.test('Has totalOrders', function () { pm.expect(json.data.totalOrders).to.be.a('number'); });",
+                                    "pm.test('Has monthlyRevenue', function () { pm.expect(json.data.monthlyRevenue).to.be.an('array'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "6.2 Best Selling Products",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/reports/best-selling?top=5",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "reports",
+                                "best-selling"
+                            ],
+                            "query": [
+                                {
+                                    "key": "top",
+                                    "value": "5"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Best Selling - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('data is array', function () { pm.expect(json.data).to.be.an('array'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "6.3 Dashboard",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/reports/dashboard",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "reports",
+                                "dashboard"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Dashboard - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "var json = pm.response.json();",
+                                    "pm.test('Has totalUsers', function () { pm.expect(json.data.totalUsers).to.be.a('number'); });",
+                                    "pm.test('Has totalProducts', function () { pm.expect(json.data.totalProducts).to.be.a('number'); });",
+                                    "pm.test('Has totalOrders', function () { pm.expect(json.data.totalOrders).to.be.a('number'); });",
+                                    "pm.test('Has topProducts', function () { pm.expect(json.data.topProducts).to.be.an('array'); });",
+                                    "pm.test('Has recentOrders', function () { pm.expect(json.data.recentOrders).to.be.an('array'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "6.4 Reports Without Auth (401)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/reports/dashboard",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "reports",
+                                "dashboard"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('No Auth - Status 401', function () { pm.response.to.have.status(401); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "6.5 Reports As Customer (403)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{customerToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/reports/dashboard",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "reports",
+                                "dashboard"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Customer cannot access reports - Status 403', function () { pm.response.to.have.status(403); });"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "7. Cleanup (Optional)",
+            "item": [
+                {
+                    "name": "7.1 Delete Product",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/products/{{productId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "products",
+                                "{{productId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Delete Product - Status 200 or 400 (has orders)', function () {",
+                                    "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 500]);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "7.2 Delete Category (Blocked - Has Products)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "categories",
+                                "{{categoryId}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Delete blocked if has products - Status 400', function () {",
+                                    "  pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

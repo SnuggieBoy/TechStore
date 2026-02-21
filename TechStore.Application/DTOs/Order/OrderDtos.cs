@@ -14,8 +14,9 @@ namespace TechStore.Application.DTOs.Order
         [MaxLength(50)]
         public string? PaymentMethod { get; set; } = "COD";
 
-        [MaxLength(255)]
-        public string? ShippingAddress { get; set; }
+        [Required(ErrorMessage = "Shipping address is required")]
+        [MaxLength(500)]
+        public string ShippingAddress { get; set; } = string.Empty;
     }
 
     public class CreateOrderItemDto
