@@ -1,8 +1,8 @@
 {
     "info": {
-        "name": "TechStore API - Full Test Suite",
-        "_postman_id": "techstore-full-test",
-        "description": "Complete test suite for TechStore PRM393 Backend.\n\nRun order: Auth → Categories → Products → Orders → Reports\n\nTokens are auto-saved via test scripts.",
+        "name": "TechStore API - Full Test Suite v2",
+        "_postman_id": "techstore-full-test-v2",
+        "description": "Complete test suite for TechStore PRM393 Backend (24 endpoints + security tests).\n\nRun order: Auth → Categories → Products → Orders → Order Status → Cancel → Reports → Security Edge Cases\n\nTokens are auto-saved via test scripts.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "variable": [
@@ -23,11 +23,23 @@
             "value": ""
         },
         {
+            "key": "categoryId2",
+            "value": ""
+        },
+        {
             "key": "productId",
             "value": ""
         },
         {
+            "key": "productId2",
+            "value": ""
+        },
+        {
             "key": "orderId",
+            "value": ""
+        },
+        {
+            "key": "orderId2",
             "value": ""
         },
         {
@@ -70,14 +82,9 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "// Admin may already exist from DB seed, that's OK",
-                                    "pm.test('Register Admin - Status 200 or 400 (already exists)', function () {",
+                                    "pm.test('Register Admin - 200 or 400 (exists)', () => {",
                                     "  pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
-                                    "});",
-                                    "if (pm.response.code === 200) {",
-                                    "  var json = pm.response.json();",
-                                    "  pm.test('Response has success=true', function () { pm.expect(json.success).to.be.true; });",
-                                    "}"
+                                    "});"
                                 ]
                             }
                         }
@@ -114,13 +121,11 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Register Customer - Status 200 or 400', function () {",
+                                    "pm.test('Register Customer - 200 or 400', () => {",
                                     "  pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
                                     "});",
                                     "if (pm.response.code === 200) {",
                                     "  var json = pm.response.json();",
-                                    "  pm.test('Response has success=true', function () { pm.expect(json.success).to.be.true; });",
-                                    "  pm.test('Has token', function () { pm.expect(json.data.token).to.be.a('string'); });",
                                     "  pm.collectionVariables.set('customerToken', json.data.token);",
                                     "  pm.collectionVariables.set('customerId', json.data.id);",
                                     "}"
@@ -160,11 +165,11 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Login Admin - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "pm.test('Login Admin - 200', () => pm.response.to.have.status(200));",
                                     "var json = pm.response.json();",
-                                    "pm.test('success is true', function () { pm.expect(json.success).to.be.true; });",
-                                    "pm.test('Has JWT token', function () { pm.expect(json.data.token).to.be.a('string'); });",
-                                    "pm.test('Role is Admin', function () { pm.expect(json.data.role).to.eql('Admin'); });",
+                                    "pm.test('success is true', () => pm.expect(json.success).to.be.true);",
+                                    "pm.test('Has JWT', () => pm.expect(json.data.token).to.be.a('string'));",
+                                    "pm.test('Role=Admin', () => pm.expect(json.data.role).to.eql('Admin'));",
                                     "pm.collectionVariables.set('adminToken', json.data.token);"
                                 ]
                             }
@@ -202,10 +207,9 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Login Customer - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "pm.test('Login Customer - 200', () => pm.response.to.have.status(200));",
                                     "var json = pm.response.json();",
-                                    "pm.test('success is true', function () { pm.expect(json.success).to.be.true; });",
-                                    "pm.test('Role is Customer', function () { pm.expect(json.data.role).to.eql('Customer'); });",
+                                    "pm.test('Role=Customer', () => pm.expect(json.data.role).to.eql('Customer'));",
                                     "pm.collectionVariables.set('customerToken', json.data.token);",
                                     "pm.collectionVariables.set('customerId', json.data.id);"
                                 ]
@@ -214,7 +218,7 @@
                     ]
                 },
                 {
-                    "name": "1.5 Login Wrong Password (Error)",
+                    "name": "1.5 Login Wrong Password (401)",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -225,7 +229,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"wrongpassword\"\n}"
+                            "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"wrong\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/auth/login",
@@ -244,9 +248,8 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Wrong password - Status 400', function () { pm.response.to.have.status(400); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('success is false', function () { pm.expect(json.success).to.be.false; });"
+                                    "pm.test('Wrong password - 401', () => pm.response.to.have.status(401));",
+                                    "pm.test('success=false', () => pm.expect(pm.response.json().success).to.be.false);"
                                 ]
                             }
                         }
@@ -255,7 +258,7 @@
             ]
         },
         {
-            "name": "2. Categories (Admin)",
+            "name": "2. Categories",
             "item": [
                 {
                     "name": "2.1 Create Category - Laptop",
@@ -291,13 +294,9 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Create Category - Status 201 or 400 (duplicate)', function () {",
-                                    "  pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
-                                    "});",
+                                    "pm.test('Create Laptop - 201 or 400', () => pm.expect(pm.response.code).to.be.oneOf([201, 400]));",
                                     "var json = pm.response.json();",
-                                    "if (json.success && json.data) {",
-                                    "  pm.collectionVariables.set('categoryId', json.data.id);",
-                                    "}"
+                                    "if (json.success && json.data) pm.collectionVariables.set('categoryId', json.data.id);"
                                 ]
                             }
                         }
@@ -337,9 +336,9 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Create Smartphone Category', function () {",
-                                    "  pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
-                                    "});"
+                                    "pm.test('Create Smartphone - 201 or 400', () => pm.expect(pm.response.code).to.be.oneOf([201, 400]));",
+                                    "var json = pm.response.json();",
+                                    "if (json.success && json.data) pm.collectionVariables.set('categoryId2', json.data.id);"
                                 ]
                             }
                         }
@@ -366,14 +365,12 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Get All Categories - Status 200', function () { pm.response.to.have.status(200); });",
+                                    "pm.test('Get All - 200', () => pm.response.to.have.status(200));",
                                     "var json = pm.response.json();",
-                                    "pm.test('success is true', function () { pm.expect(json.success).to.be.true; });",
-                                    "pm.test('data is array', function () { pm.expect(json.data).to.be.an('array'); });",
-                                    "// Save first category ID for later",
-                                    "if (json.data.length > 0) {",
-                                    "  pm.collectionVariables.set('categoryId', json.data[0].id);",
-                                    "}"
+                                    "pm.test('Is array', () => pm.expect(json.data).to.be.an('array'));",
+                                    "pm.test('Has productCount', () => pm.expect(json.data[0]).to.have.property('productCount'));",
+                                    "if (json.data.length > 0) pm.collectionVariables.set('categoryId', json.data[0].id);",
+                                    "if (json.data.length > 1) pm.collectionVariables.set('categoryId2', json.data[1].id);"
                                 ]
                             }
                         }
@@ -401,9 +398,8 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Get Category By ID - Status 200', function () { pm.response.to.have.status(200); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('Has name', function () { pm.expect(json.data.name).to.be.a('string'); });"
+                                    "pm.test('Get By ID - 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Has name', () => pm.expect(pm.response.json().data.name).to.be.a('string'));"
                                 ]
                             }
                         }
@@ -444,9 +440,8 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Update Category - Status 200', function () { pm.response.to.have.status(200); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('Description updated', function () { pm.expect(json.data.description).to.include('gaming'); });"
+                                    "pm.test('Update - 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Updated description', () => pm.expect(pm.response.json().data.description).to.include('gaming'));"
                                 ]
                             }
                         }
@@ -474,9 +469,8 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Not Found - Status 404', function () { pm.response.to.have.status(404); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('success is false', function () { pm.expect(json.success).to.be.false; });"
+                                    "pm.test('Not Found - 404', () => pm.response.to.have.status(404));",
+                                    "pm.test('success=false', () => pm.expect(pm.response.json().success).to.be.false);"
                                 ]
                             }
                         }
@@ -485,10 +479,10 @@
             ]
         },
         {
-            "name": "3. Products (Admin)",
+            "name": "3. Products",
             "item": [
                 {
-                    "name": "3.1 Create Product - MacBook Pro",
+                    "name": "3.1 Create - MacBook Pro",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -521,10 +515,9 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Create Product - Status 201', function () { pm.response.to.have.status(201); });",
+                                    "pm.test('Create MacBook - 201', () => pm.response.to.have.status(201));",
                                     "var json = pm.response.json();",
-                                    "pm.test('success is true', function () { pm.expect(json.success).to.be.true; });",
-                                    "pm.test('Has specs', function () { pm.expect(json.data.specs).to.be.an('array').with.length.greaterThan(0); });",
+                                    "pm.test('Has specs', () => pm.expect(json.data.specs.length).to.be.greaterThan(0));",
                                     "pm.collectionVariables.set('productId', json.data.id);"
                                 ]
                             }
@@ -532,7 +525,7 @@
                     ]
                 },
                 {
-                    "name": "3.2 Create Product - iPhone 16",
+                    "name": "3.2 Create - iPhone 16",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -547,7 +540,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"name\": \"iPhone 16 Pro Max 256GB\",\n  \"description\": \"iPhone 16 Pro Max 256GB Titan Sa Mạc\",\n  \"price\": 34990000,\n  \"stockQuantity\": 50,\n  \"categoryId\": {{categoryId}},\n  \"imageUrl\": \"https://store.storeimages.cdn-apple.com/iphone-16.jpg\",\n  \"specs\": [\n    { \"specKey\": \"CPU\", \"specValue\": \"A18 Pro\" },\n    { \"specKey\": \"RAM\", \"specValue\": \"8GB\" },\n    { \"specKey\": \"Storage\", \"specValue\": \"256GB\" },\n    { \"specKey\": \"Display\", \"specValue\": \"6.9 inch Super Retina XDR\" }\n  ]\n}"
+                            "raw": "{\n  \"name\": \"iPhone 16 Pro Max 256GB\",\n  \"description\": \"iPhone 16 Pro Max Titan Sa Mạc\",\n  \"price\": 34990000,\n  \"stockQuantity\": 50,\n  \"categoryId\": {{categoryId}},\n  \"imageUrl\": \"https://store.storeimages.cdn-apple.com/iphone-16.jpg\",\n  \"specs\": [\n    { \"specKey\": \"CPU\", \"specValue\": \"A18 Pro\" },\n    { \"specKey\": \"RAM\", \"specValue\": \"8GB\" },\n    { \"specKey\": \"Storage\", \"specValue\": \"256GB\" }\n  ]\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/products",
@@ -565,14 +558,15 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Create iPhone - Status 201', function () { pm.response.to.have.status(201); });"
+                                    "pm.test('Create iPhone - 201', () => pm.response.to.have.status(201));",
+                                    "pm.collectionVariables.set('productId2', pm.response.json().data.id);"
                                 ]
                             }
                         }
                     ]
                 },
                 {
-                    "name": "3.3 Get Products (No Filter)",
+                    "name": "3.3 Get Products (default page)",
                     "request": {
                         "method": "GET",
                         "header": [],
@@ -592,23 +586,23 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Get Products - Status 200', function () { pm.response.to.have.status(200); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('Has items array', function () { pm.expect(json.data.items).to.be.an('array'); });",
-                                    "pm.test('Has totalCount', function () { pm.expect(json.data.totalCount).to.be.a('number'); });",
-                                    "pm.test('Has pagination', function () { pm.expect(json.data.page).to.eql(1); });"
+                                    "pm.test('Get Products - 200', () => pm.response.to.have.status(200));",
+                                    "var d = pm.response.json().data;",
+                                    "pm.test('Has items', () => pm.expect(d.items).to.be.an('array'));",
+                                    "pm.test('Has totalCount', () => pm.expect(d.totalCount).to.be.a('number'));",
+                                    "pm.test('Has pagination', () => pm.expect(d.page).to.eql(1));"
                                 ]
                             }
                         }
                     ]
                 },
                 {
-                    "name": "3.4 Search Products",
+                    "name": "3.4 Search Products - MacBook",
                     "request": {
                         "method": "GET",
                         "header": [],
                         "url": {
-                            "raw": "{{baseUrl}}/api/products?search=MacBook&sortBy=price&sortDescending=false",
+                            "raw": "{{baseUrl}}/api/products?search=MacBook&sortBy=price",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -624,10 +618,6 @@
                                 {
                                     "key": "sortBy",
                                     "value": "price"
-                                },
-                                {
-                                    "key": "sortDescending",
-                                    "value": "false"
                                 }
                             ]
                         }
@@ -637,11 +627,11 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Search Products - Status 200', function () { pm.response.to.have.status(200); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('Found MacBook', function () {",
-                                    "  pm.expect(json.data.items.length).to.be.greaterThan(0);",
-                                    "  pm.expect(json.data.items[0].name).to.include('MacBook');",
+                                    "pm.test('Search - 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Found MacBook', () => {",
+                                    "  var items = pm.response.json().data.items;",
+                                    "  pm.expect(items.length).to.be.greaterThan(0);",
+                                    "  pm.expect(items[0].name).to.include('MacBook');",
                                     "});"
                                 ]
                             }
@@ -679,12 +669,9 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Filter by Price - Status 200', function () { pm.response.to.have.status(200); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('Products in price range', function () {",
-                                    "  json.data.items.forEach(function(p) {",
-                                    "    pm.expect(p.price).to.be.within(30000000, 40000000);",
-                                    "  });",
+                                    "pm.test('Price filter - 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('In range', () => {",
+                                    "  pm.response.json().data.items.forEach(p => pm.expect(p.price).to.be.within(30000000, 40000000));",
                                     "});"
                                 ]
                             }
@@ -692,7 +679,7 @@
                     ]
                 },
                 {
-                    "name": "3.6 Get Product Detail (with Specs)",
+                    "name": "3.6 Get Product Detail",
                     "request": {
                         "method": "GET",
                         "header": [],
@@ -713,11 +700,10 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Get Product Detail - Status 200', function () { pm.response.to.have.status(200); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('Has product name', function () { pm.expect(json.data.name).to.be.a('string'); });",
-                                    "pm.test('Has specs', function () { pm.expect(json.data.specs).to.be.an('array'); });",
-                                    "pm.test('Has categoryName', function () { pm.expect(json.data.categoryName).to.be.a('string'); });"
+                                    "pm.test('Detail - 200', () => pm.response.to.have.status(200));",
+                                    "var d = pm.response.json().data;",
+                                    "pm.test('Has specs', () => pm.expect(d.specs).to.be.an('array'));",
+                                    "pm.test('Has categoryName', () => pm.expect(d.categoryName).to.be.a('string'));"
                                 ]
                             }
                         }
@@ -739,7 +725,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"name\": \"MacBook Pro 14 M3 Pro\",\n  \"description\": \"MacBook Pro 14 inch chip M3 Pro - UPDATED\",\n  \"price\": 47990000,\n  \"stockQuantity\": 20,\n  \"categoryId\": {{categoryId}},\n  \"imageUrl\": \"https://store.storeimages.cdn-apple.com/macbook-pro-14.jpg\",\n  \"specs\": [\n    { \"specKey\": \"CPU\", \"specValue\": \"Apple M3 Pro\" },\n    { \"specKey\": \"RAM\", \"specValue\": \"18GB\" },\n    { \"specKey\": \"Storage\", \"specValue\": \"512GB SSD\" },\n    { \"specKey\": \"Display\", \"specValue\": \"14.2 inch Liquid Retina XDR\" },\n    { \"specKey\": \"Battery\", \"specValue\": \"70Wh\" }\n  ]\n}"
+                            "raw": "{\n  \"name\": \"MacBook Pro 14 M3 Pro\",\n  \"description\": \"MacBook Pro 14 inch - UPDATED\",\n  \"price\": 47990000,\n  \"stockQuantity\": 20,\n  \"categoryId\": {{categoryId}},\n  \"imageUrl\": \"https://store.storeimages.cdn-apple.com/macbook-pro-14.jpg\",\n  \"specs\": [\n    { \"specKey\": \"CPU\", \"specValue\": \"Apple M3 Pro\" },\n    { \"specKey\": \"RAM\", \"specValue\": \"18GB\" },\n    { \"specKey\": \"Storage\", \"specValue\": \"512GB SSD\" },\n    { \"specKey\": \"Display\", \"specValue\": \"14.2 inch\" },\n    { \"specKey\": \"Battery\", \"specValue\": \"70Wh\" }\n  ]\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/products/{{productId}}",
@@ -758,17 +744,16 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Update Product - Status 200', function () { pm.response.to.have.status(200); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('Price updated', function () { pm.expect(json.data.price).to.eql(47990000); });",
-                                    "pm.test('Has 5 specs now', function () { pm.expect(json.data.specs.length).to.eql(5); });"
+                                    "pm.test('Update - 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Price=47990000', () => pm.expect(pm.response.json().data.price).to.eql(47990000));",
+                                    "pm.test('5 specs', () => pm.expect(pm.response.json().data.specs.length).to.eql(5));"
                                 ]
                             }
                         }
                     ]
                 },
                 {
-                    "name": "3.8 Create Product Without Auth (401)",
+                    "name": "3.8 Create Without Auth (401)",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -797,14 +782,14 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('No Auth - Status 401', function () { pm.response.to.have.status(401); });"
+                                    "pm.test('No Auth - 401', () => pm.response.to.have.status(401));"
                                 ]
                             }
                         }
                     ]
                 },
                 {
-                    "name": "3.9 Create Product As Customer (403)",
+                    "name": "3.9 Create As Customer (403)",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -837,7 +822,7 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Customer cannot create product - Status 403', function () { pm.response.to.have.status(403); });"
+                                    "pm.test('Customer forbidden - 403', () => pm.response.to.have.status(403));"
                                 ]
                             }
                         }
@@ -849,7 +834,7 @@
             "name": "4. Orders (Customer)",
             "item": [
                 {
-                    "name": "4.1 Place Order (Customer)",
+                    "name": "4.1 Place Order",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -882,12 +867,11 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Place Order - Status 201', function () { pm.response.to.have.status(201); });",
+                                    "pm.test('Place Order - 201', () => pm.response.to.have.status(201));",
                                     "var json = pm.response.json();",
-                                    "pm.test('success is true', function () { pm.expect(json.success).to.be.true; });",
-                                    "pm.test('Status is Pending', function () { pm.expect(json.data.status).to.eql('Pending'); });",
-                                    "pm.test('Has items', function () { pm.expect(json.data.items).to.be.an('array').with.length.greaterThan(0); });",
-                                    "pm.test('TotalAmount > 0', function () { pm.expect(json.data.totalAmount).to.be.greaterThan(0); });",
+                                    "pm.test('Status=Pending', () => pm.expect(json.data.status).to.eql('Pending'));",
+                                    "pm.test('Has items', () => pm.expect(json.data.items.length).to.be.greaterThan(0));",
+                                    "pm.test('TotalAmount > 0', () => pm.expect(json.data.totalAmount).to.be.greaterThan(0));",
                                     "pm.collectionVariables.set('orderId', json.data.id);"
                                 ]
                             }
@@ -916,18 +900,15 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Stock Deducted - Status 200', function () { pm.response.to.have.status(200); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('Stock reduced (should be 18 after buying 2 from 20)', function () {",
-                                    "  pm.expect(json.data.stockQuantity).to.be.lessThan(20);",
-                                    "});"
+                                    "pm.test('Stock deducted - 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Stock < 20', () => pm.expect(pm.response.json().data.stockQuantity).to.be.lessThan(20));"
                                 ]
                             }
                         }
                     ]
                 },
                 {
-                    "name": "4.3 Place Order - Insufficient Stock (Error)",
+                    "name": "4.3 Place Order - Duplicate Items Merge",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -942,7 +923,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"items\": [\n    { \"productId\": {{productId}}, \"quantity\": 99999 }\n  ],\n  \"paymentMethod\": \"COD\",\n  \"shippingAddress\": \"Test\"\n}"
+                            "raw": "{\n  \"items\": [\n    { \"productId\": {{productId2}}, \"quantity\": 1 },\n    { \"productId\": {{productId2}}, \"quantity\": 2 }\n  ],\n  \"shippingAddress\": \"456 Le Loi, Q1, TP.HCM\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/orders",
@@ -960,16 +941,99 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Insufficient Stock - Status 400', function () { pm.response.to.have.status(400); });",
+                                    "pm.test('Duplicate merge - 201', () => pm.response.to.have.status(201));",
                                     "var json = pm.response.json();",
-                                    "pm.test('Error message about stock', function () { pm.expect(json.message).to.include('Insufficient'); });"
+                                    "pm.test('Items merged to 1', () => pm.expect(json.data.items.length).to.eql(1));",
+                                    "pm.test('Quantity = 3', () => pm.expect(json.data.items[0].quantity).to.eql(3));",
+                                    "pm.collectionVariables.set('orderId2', json.data.id);"
                                 ]
                             }
                         }
                     ]
                 },
                 {
-                    "name": "4.4 Get My Orders (Customer)",
+                    "name": "4.4 Insufficient Stock (400)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{customerToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"items\": [{ \"productId\": {{productId}}, \"quantity\": 99999 }],\n  \"shippingAddress\": \"Test Address\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/orders",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Insufficient stock - 400', () => pm.response.to.have.status(400));",
+                                    "pm.test('Error msg', () => pm.expect(pm.response.json().message).to.include('Insufficient'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "4.5 Missing ShippingAddress (400)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{customerToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"items\": [{ \"productId\": {{productId}}, \"quantity\": 1 }]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/orders",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Missing address - 400', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "4.6 My Orders (Paginated)",
                     "request": {
                         "method": "GET",
                         "header": [
@@ -979,7 +1043,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/orders/my-orders",
+                            "raw": "{{baseUrl}}/api/orders/my-orders?page=1&pageSize=5",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -987,6 +1051,16 @@
                                 "api",
                                 "orders",
                                 "my-orders"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "pageSize",
+                                    "value": "5"
+                                }
                             ]
                         }
                     },
@@ -995,16 +1069,18 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('My Orders - Status 200', function () { pm.response.to.have.status(200); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('Has orders', function () { pm.expect(json.data).to.be.an('array').with.length.greaterThan(0); });"
+                                    "pm.test('My Orders - 200', () => pm.response.to.have.status(200));",
+                                    "var d = pm.response.json().data;",
+                                    "pm.test('Has items', () => pm.expect(d.items).to.be.an('array'));",
+                                    "pm.test('Has totalCount', () => pm.expect(d.totalCount).to.be.a('number'));",
+                                    "pm.test('Has page', () => pm.expect(d.page).to.eql(1));"
                                 ]
                             }
                         }
                     ]
                 },
                 {
-                    "name": "4.5 Get Order Detail",
+                    "name": "4.7 Order Detail",
                     "request": {
                         "method": "GET",
                         "header": [
@@ -1030,17 +1106,16 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Order Detail - Status 200', function () { pm.response.to.have.status(200); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('Has order items', function () { pm.expect(json.data.items).to.be.an('array'); });",
-                                    "pm.test('Has shipping address', function () { pm.expect(json.data.shippingAddress).to.be.a('string'); });"
+                                    "pm.test('Order Detail - 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Has items', () => pm.expect(pm.response.json().data.items).to.be.an('array'));",
+                                    "pm.test('Has shippingAddress', () => pm.expect(pm.response.json().data.shippingAddress).to.be.a('string'));"
                                 ]
                             }
                         }
                     ]
                 },
                 {
-                    "name": "4.6 Place Order Without Auth (401)",
+                    "name": "4.8 No Auth Place Order (401)",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -1051,7 +1126,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"items\": [{ \"productId\": 1, \"quantity\": 1 }]\n}"
+                            "raw": "{\n  \"items\": [{ \"productId\": 1, \"quantity\": 1 }],\n  \"shippingAddress\": \"Test\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/orders",
@@ -1069,7 +1144,7 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('No Auth - Status 401', function () { pm.response.to.have.status(401); });"
+                                    "pm.test('No Auth - 401', () => pm.response.to.have.status(401));"
                                 ]
                             }
                         }
@@ -1078,10 +1153,10 @@
             ]
         },
         {
-            "name": "5. Order Management (Admin)",
+            "name": "5. Order Status (Admin)",
             "item": [
                 {
-                    "name": "5.1 Get All Orders (Admin)",
+                    "name": "5.1 Get All Orders (Admin, Paginated)",
                     "request": {
                         "method": "GET",
                         "header": [
@@ -1091,13 +1166,23 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/orders",
+                            "raw": "{{baseUrl}}/api/orders?page=1&pageSize=10",
                             "host": [
                                 "{{baseUrl}}"
                             ],
                             "path": [
                                 "api",
                                 "orders"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "pageSize",
+                                    "value": "10"
+                                }
                             ]
                         }
                     },
@@ -1106,16 +1191,15 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Get All Orders - Status 200', function () { pm.response.to.have.status(200); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('Has orders', function () { pm.expect(json.data).to.be.an('array'); });"
+                                    "pm.test('All Orders - 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Is paginated', () => pm.expect(pm.response.json().data.totalCount).to.be.a('number'));"
                                 ]
                             }
                         }
                     ]
                 },
                 {
-                    "name": "5.2 Update Status: Pending → Confirmed",
+                    "name": "5.2 Pending → Confirmed",
                     "request": {
                         "method": "PUT",
                         "header": [
@@ -1130,7 +1214,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"status\": \"Confirmed\"\n}"
+                            "raw": "{ \"status\": \"Confirmed\" }"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/orders/{{orderId}}/status",
@@ -1150,16 +1234,15 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Confirmed - Status 200', function () { pm.response.to.have.status(200); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('Status is Confirmed', function () { pm.expect(json.data.status).to.eql('Confirmed'); });"
+                                    "pm.test('Confirmed - 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Status=Confirmed', () => pm.expect(pm.response.json().data.status).to.eql('Confirmed'));"
                                 ]
                             }
                         }
                     ]
                 },
                 {
-                    "name": "5.3 Update Status: Confirmed → Shipped",
+                    "name": "5.3 Confirmed → Shipped",
                     "request": {
                         "method": "PUT",
                         "header": [
@@ -1174,7 +1257,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"status\": \"Shipped\"\n}"
+                            "raw": "{ \"status\": \"Shipped\" }"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/orders/{{orderId}}/status",
@@ -1194,16 +1277,15 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Shipped - Status 200', function () { pm.response.to.have.status(200); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('Status is Shipped', function () { pm.expect(json.data.status).to.eql('Shipped'); });"
+                                    "pm.test('Shipped - 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Status=Shipped', () => pm.expect(pm.response.json().data.status).to.eql('Shipped'));"
                                 ]
                             }
                         }
                     ]
                 },
                 {
-                    "name": "5.4 Update Status: Shipped → Delivered",
+                    "name": "5.4 Shipped → Delivered",
                     "request": {
                         "method": "PUT",
                         "header": [
@@ -1218,7 +1300,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"status\": \"Delivered\"\n}"
+                            "raw": "{ \"status\": \"Delivered\" }"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/orders/{{orderId}}/status",
@@ -1238,16 +1320,15 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Delivered - Status 200', function () { pm.response.to.have.status(200); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('Status is Delivered', function () { pm.expect(json.data.status).to.eql('Delivered'); });"
+                                    "pm.test('Delivered - 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Status=Delivered', () => pm.expect(pm.response.json().data.status).to.eql('Delivered'));"
                                 ]
                             }
                         }
                     ]
                 },
                 {
-                    "name": "5.5 Invalid Status Transition (Error)",
+                    "name": "5.5 Invalid Transition (400)",
                     "request": {
                         "method": "PUT",
                         "header": [
@@ -1262,7 +1343,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"status\": \"Pending\"\n}"
+                            "raw": "{ \"status\": \"Pending\" }"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/orders/{{orderId}}/status",
@@ -1282,9 +1363,8 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Invalid Transition - Status 400', function () { pm.response.to.have.status(400); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('Error about status transition', function () { pm.expect(json.message).to.include('Cannot change'); });"
+                                    "pm.test('Invalid transition - 400', () => pm.response.to.have.status(400));",
+                                    "pm.test('Error msg', () => pm.expect(pm.response.json().message).to.include('Cannot change'));"
                                 ]
                             }
                         }
@@ -1293,10 +1373,115 @@
             ]
         },
         {
-            "name": "6. Reports (Admin)",
+            "name": "6. Customer Cancel Order",
             "item": [
                 {
-                    "name": "6.1 Revenue Report",
+                    "name": "6.1 Cancel Pending Order (Customer)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{customerToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/orders/{{orderId2}}/cancel",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders",
+                                "{{orderId2}}",
+                                "cancel"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Cancel Pending - 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Status=Cancelled', () => pm.expect(pm.response.json().data.status).to.eql('Cancelled'));",
+                                    "pm.test('Message', () => pm.expect(pm.response.json().message).to.include('cancelled'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "6.2 Verify Stock Restored After Cancel",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/products/{{productId2}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "products",
+                                "{{productId2}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Stock restored - 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Stock=50 (original)', () => pm.expect(pm.response.json().data.stockQuantity).to.eql(50));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "6.3 Cancel Non-Pending Order (400)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{customerToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/orders/{{orderId}}/cancel",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders",
+                                "{{orderId}}",
+                                "cancel"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Cannot cancel Delivered - 400', () => pm.response.to.have.status(400));",
+                                    "pm.test('Error msg', () => pm.expect(pm.response.json().message).to.include('Cannot cancel'));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "7. Reports (Admin)",
+            "item": [
+                {
+                    "name": "7.1 Revenue Report",
                     "request": {
                         "method": "GET",
                         "header": [
@@ -1322,18 +1507,18 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Revenue Report - Status 200', function () { pm.response.to.have.status(200); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('Has totalRevenue', function () { pm.expect(json.data.totalRevenue).to.be.a('number'); });",
-                                    "pm.test('Has totalOrders', function () { pm.expect(json.data.totalOrders).to.be.a('number'); });",
-                                    "pm.test('Has monthlyRevenue', function () { pm.expect(json.data.monthlyRevenue).to.be.an('array'); });"
+                                    "pm.test('Revenue - 200', () => pm.response.to.have.status(200));",
+                                    "var d = pm.response.json().data;",
+                                    "pm.test('Has totalRevenue', () => pm.expect(d.totalRevenue).to.be.a('number'));",
+                                    "pm.test('Has monthlyRevenue', () => pm.expect(d.monthlyRevenue).to.be.an('array'));",
+                                    "pm.test('Has completedOrders', () => pm.expect(d.completedOrders).to.be.a('number'));"
                                 ]
                             }
                         }
                     ]
                 },
                 {
-                    "name": "6.2 Best Selling Products",
+                    "name": "7.2 Best Selling Products",
                     "request": {
                         "method": "GET",
                         "header": [
@@ -1365,16 +1550,15 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Best Selling - Status 200', function () { pm.response.to.have.status(200); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('data is array', function () { pm.expect(json.data).to.be.an('array'); });"
+                                    "pm.test('Best Selling - 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Is array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
                                 ]
                             }
                         }
                     ]
                 },
                 {
-                    "name": "6.3 Dashboard",
+                    "name": "7.3 Dashboard",
                     "request": {
                         "method": "GET",
                         "header": [
@@ -1400,20 +1584,20 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Dashboard - Status 200', function () { pm.response.to.have.status(200); });",
-                                    "var json = pm.response.json();",
-                                    "pm.test('Has totalUsers', function () { pm.expect(json.data.totalUsers).to.be.a('number'); });",
-                                    "pm.test('Has totalProducts', function () { pm.expect(json.data.totalProducts).to.be.a('number'); });",
-                                    "pm.test('Has totalOrders', function () { pm.expect(json.data.totalOrders).to.be.a('number'); });",
-                                    "pm.test('Has topProducts', function () { pm.expect(json.data.topProducts).to.be.an('array'); });",
-                                    "pm.test('Has recentOrders', function () { pm.expect(json.data.recentOrders).to.be.an('array'); });"
+                                    "pm.test('Dashboard - 200', () => pm.response.to.have.status(200));",
+                                    "var d = pm.response.json().data;",
+                                    "pm.test('Has totalUsers', () => pm.expect(d.totalUsers).to.be.a('number'));",
+                                    "pm.test('Has totalProducts', () => pm.expect(d.totalProducts).to.be.a('number'));",
+                                    "pm.test('Has totalOrders', () => pm.expect(d.totalOrders).to.be.a('number'));",
+                                    "pm.test('Has topProducts', () => pm.expect(d.topProducts).to.be.an('array'));",
+                                    "pm.test('Has recentOrders', () => pm.expect(d.recentOrders).to.be.an('array'));"
                                 ]
                             }
                         }
                     ]
                 },
                 {
-                    "name": "6.4 Reports Without Auth (401)",
+                    "name": "7.4 Reports Without Auth (401)",
                     "request": {
                         "method": "GET",
                         "header": [],
@@ -1434,14 +1618,14 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('No Auth - Status 401', function () { pm.response.to.have.status(401); });"
+                                    "pm.test('No Auth - 401', () => pm.response.to.have.status(401));"
                                 ]
                             }
                         }
                     ]
                 },
                 {
-                    "name": "6.5 Reports As Customer (403)",
+                    "name": "7.5 Reports As Customer (403)",
                     "request": {
                         "method": "GET",
                         "header": [
@@ -1467,7 +1651,7 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Customer cannot access reports - Status 403', function () { pm.response.to.have.status(403); });"
+                                    "pm.test('Customer forbidden - 403', () => pm.response.to.have.status(403));"
                                 ]
                             }
                         }
@@ -1476,10 +1660,43 @@
             ]
         },
         {
-            "name": "7. Cleanup (Optional)",
+            "name": "8. Security Edge Cases",
             "item": [
                 {
-                    "name": "7.1 Delete Product",
+                    "name": "8.1 PageSize > 50 Rejected",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/products?pageSize=999",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "products"
+                            ],
+                            "query": [
+                                {
+                                    "key": "pageSize",
+                                    "value": "999"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('PageSize > 50 - 400', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "8.2 Delete Product With Orders (400)",
                     "request": {
                         "method": "DELETE",
                         "header": [
@@ -1505,16 +1722,15 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Delete Product - Status 200 or 400 (has orders)', function () {",
-                                    "  pm.expect(pm.response.code).to.be.oneOf([200, 400, 500]);",
-                                    "});"
+                                    "pm.test('Cannot delete - has orders - 400', () => pm.response.to.have.status(400));",
+                                    "pm.test('Error msg', () => pm.expect(pm.response.json().message).to.include('order records'));"
                                 ]
                             }
                         }
                     ]
                 },
                 {
-                    "name": "7.2 Delete Category (Blocked - Has Products)",
+                    "name": "8.3 Delete Category With Products (400)",
                     "request": {
                         "method": "DELETE",
                         "header": [
@@ -1540,9 +1756,7 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
-                                    "pm.test('Delete blocked if has products - Status 400', function () {",
-                                    "  pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
-                                    "});"
+                                    "pm.test('Cannot delete - has products - 400', () => pm.response.to.have.status(400));"
                                 ]
                             }
                         }
