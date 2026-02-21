@@ -1,63 +1,69 @@
--- Database: TechStore
+-- ====================================
+-- TechStore Database Schema
+-- SQL Server
+-- ====================================
+
 CREATE DATABASE TechStore;
 GO
+
 USE TechStore;
 GO
 
--- Table: Users
+-- Users Table
 CREATE TABLE Users (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     Username NVARCHAR(50) NOT NULL UNIQUE,
     Email NVARCHAR(100) NOT NULL UNIQUE,
     PasswordHash NVARCHAR(255) NOT NULL,
-    FullName NVARCHAR(100),
-    [Role] NVARCHAR(20) NOT NULL DEFAULT 'Customer', -- Admin, Customer
-    [Address] NVARCHAR(255),
-    CreatedAt DATETIME DEFAULT GETDATE()
+    FullName NVARCHAR(100) NULL,
+    Role NVARCHAR(20) NOT NULL DEFAULT 'Customer',
+    Phone NVARCHAR(15) NULL,
+    Address NVARCHAR(255) NULL,
+    CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE()
 );
 
--- Table: Categories
+-- Categories Table
 CREATE TABLE Categories (
     Id INT IDENTITY(1,1) PRIMARY KEY,
-    Name NVARCHAR(100) NOT NULL,
-    [Description] NVARCHAR(500)
+    Name NVARCHAR(100) NOT NULL UNIQUE,
+    Description NVARCHAR(500) NULL
 );
 
--- Table: Products
+-- Products Table
 CREATE TABLE Products (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     Name NVARCHAR(200) NOT NULL,
-    [Description] NVARCHAR(MAX),
+    Description NVARCHAR(MAX) NULL,
     Price DECIMAL(18, 2) NOT NULL,
     StockQuantity INT NOT NULL DEFAULT 0,
     CategoryId INT NOT NULL,
-    ImageUrl NVARCHAR(MAX),
-    CreatedAt DATETIME DEFAULT GETDATE(),
+    ImageUrl NVARCHAR(500) NULL,
+    CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
     FOREIGN KEY (CategoryId) REFERENCES Categories(Id) ON DELETE CASCADE
 );
 
--- Table: ProductSpecs
+-- ProductSpecs Table (Dynamic Attributes)
 CREATE TABLE ProductSpecs (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     ProductId INT NOT NULL,
-    SpecKey NVARCHAR(50) NOT NULL, -- e.g., RAM, CPU, Color
-    SpecValue NVARCHAR(100) NOT NULL, -- e.g., 16GB, i7, Red
+    SpecKey NVARCHAR(50) NOT NULL,
+    SpecValue NVARCHAR(100) NOT NULL,
     FOREIGN KEY (ProductId) REFERENCES Products(Id) ON DELETE CASCADE
 );
 
--- Table: Orders
+-- Orders Table
 CREATE TABLE Orders (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     UserId INT NOT NULL,
-    OrderDate DATETIME DEFAULT GETDATE(),
+    OrderDate DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
     TotalAmount DECIMAL(18, 2) NOT NULL,
-    [Status] NVARCHAR(50) DEFAULT 'Pending', -- Pending, Processing, Shipped, Delivered, Cancelled
-    PaymentMethod NVARCHAR(50), -- COD, Momo, ZaloPay
-    ShippingAddress NVARCHAR(255),
+    Status NVARCHAR(50) NOT NULL DEFAULT 'Pending',
+    PaymentMethod NVARCHAR(50) NULL,
+    ShippingAddress NVARCHAR(255) NULL,
     FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE
 );
 
--- Table: OrderItems
+-- OrderItems Table
 CREATE TABLE OrderItems (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     OrderId INT NOT NULL,
@@ -65,8 +71,24 @@ CREATE TABLE OrderItems (
     Quantity INT NOT NULL,
     UnitPrice DECIMAL(18, 2) NOT NULL,
     FOREIGN KEY (OrderId) REFERENCES Orders(Id) ON DELETE CASCADE,
-    FOREIGN KEY (ProductId) REFERENCES Products(Id) -- No Cascade Delete here to preserve order history
+    FOREIGN KEY (ProductId) REFERENCES Products(Id) ON DELETE NO ACTION
 );
 
--- Seed Data (Optional, but good for testing)
-INSERT INTO Categories (Name, Description) VALUES ('Laptop', 'Gaming and Office Laptops'), ('Smartphone', 'Latest Smartphones'), ('Tablet', 'Portable Tablets');
+-- ====================================
+-- Seed Data
+-- ====================================
+INSERT INTO Categories (Name, Description) VALUES
+    (N'Laptop', N'Máy tính xách tay các loại'),
+    (N'Smartphone', N'Điện thoại thông minh'),
+    (N'Tablet', N'Máy tính bảng'),
+    (N'Accessories', N'Phụ kiện công nghệ');
+
+-- Create default Admin account (password: admin123)
+INSERT INTO Users (Username, Email, PasswordHash, FullName, Role)
+VALUES (
+    'admin',
+    'admin@techstore.com',
+    '$2a$11$K7RqFGDSQXKhGCVOqZV9qe5K0bY9zP2tVsR8L1mK7jZxRV44mmPbm',
+    'Admin TechStore',
+    'Admin'
+);

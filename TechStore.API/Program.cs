@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Text.Json;
+using TechStore.API.Middlewares;
 using TechStore.Application.Interfaces.Repositories;
 using TechStore.Application.Interfaces.Services;
 using TechStore.Application.Services;
@@ -12,7 +14,14 @@ using TechStore.Infrastructure.Repositories;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // camelCase for Flutter/Dio compatibility
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+    });
+
 builder.Services.AddEndpointsApiExplorer();
 
 // Swagger with JWT Authorize button
@@ -39,6 +48,17 @@ builder.Services.AddSwaggerGen(c =>
             },
             Array.Empty<string>()
         }
+    });
+});
+
+// CORS - Allow Flutter mobile app to connect
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
     });
 });
 
@@ -76,6 +96,9 @@ builder.Services.AddAuthentication(options =>
 
 var app = builder.Build();
 
+// Global Exception Handling Middleware (must be first)
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -83,6 +106,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
     app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
 }
+
+// CORS must be before Auth
+app.UseCors("AllowAll");
 
 app.UseHttpsRedirection();
 

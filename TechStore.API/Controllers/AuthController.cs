@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
 using TechStore.Application.DTOs.Auth;
+using TechStore.Application.DTOs.Common;
 using TechStore.Application.Interfaces.Services;
 
 namespace TechStore.API.Controllers
@@ -16,31 +16,41 @@ namespace TechStore.API.Controllers
             _authService = authService;
         }
 
+        /// <summary>
+        /// Register a new user account.
+        /// </summary>
         [HttpPost("register")]
+        [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Register([FromBody] RegisterDto request)
         {
             try
             {
                 var result = await _authService.RegisterAsync(request);
-                return Ok(result);
+                return Ok(ApiResponse<UserDto>.SuccessResponse(result, "Registration successful"));
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse<object>.ErrorResponse(ex.Message));
             }
         }
 
+        /// <summary>
+        /// Login with username and password.
+        /// </summary>
         [HttpPost("login")]
+        [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Login([FromBody] LoginDto request)
         {
             try
             {
                 var result = await _authService.LoginAsync(request);
-                return Ok(result);
+                return Ok(ApiResponse<UserDto>.SuccessResponse(result, "Login successful"));
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ApiResponse<object>.ErrorResponse(ex.Message));
             }
         }
     }

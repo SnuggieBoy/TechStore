@@ -26,25 +26,27 @@ namespace TechStore.Application.Services
 
         public async Task<UserDto> RegisterAsync(RegisterDto request)
         {
-            if (await _userRepository.GetByUsernameAsync(request.Username) != null)
+            // Case-insensitive check
+            if (await _userRepository.GetByUsernameAsync(request.Username.Trim()) != null)
             {
-                throw new Exception("Username already exists");
+                throw new ArgumentException("Username already exists");
             }
 
-            if (await _userRepository.GetByEmailAsync(request.Email) != null)
+            if (await _userRepository.GetByEmailAsync(request.Email.Trim().ToLower()) != null)
             {
-                throw new Exception("Email already exists");
+                throw new ArgumentException("Email already exists");
             }
 
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
             var user = new User
             {
-                Username = request.Username,
-                Email = request.Email,
+                Username = request.Username.Trim(),
+                Email = request.Email.Trim().ToLower(),
                 PasswordHash = passwordHash,
                 FullName = request.FullName,
-                Role = "Customer", // Default role
+                Phone = request.Phone,
+                Role = "Customer",
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -53,28 +55,25 @@ namespace TechStore.Application.Services
 
             var token = GenerateJwtToken(user);
 
-            return new UserDto
-            {
-                Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-                FullName = user.FullName,
-                Role = user.Role,
-                Token = token
-            };
+            return MapToDto(user, token);
         }
 
         public async Task<UserDto> LoginAsync(LoginDto request)
         {
-            var user = await _userRepository.GetByUsernameAsync(request.Username);
+            var user = await _userRepository.GetByUsernameAsync(request.Username.Trim());
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
-                throw new Exception("Invalid username or password");
+                throw new UnauthorizedAccessException("Invalid username or password");
             }
 
             var token = GenerateJwtToken(user);
 
+            return MapToDto(user, token);
+        }
+
+        private UserDto MapToDto(User user, string token)
+        {
             return new UserDto
             {
                 Id = user.Id,
@@ -82,6 +81,7 @@ namespace TechStore.Application.Services
                 Email = user.Email,
                 FullName = user.FullName,
                 Role = user.Role,
+                Phone = user.Phone,
                 Token = token
             };
         }
@@ -93,7 +93,7 @@ namespace TechStore.Application.Services
 
             if (string.IsNullOrEmpty(secretKey))
             {
-                throw new Exception("JwtSettings:SecretKey is not configured.");
+                throw new InvalidOperationException("JwtSettings:SecretKey is not configured.");
             }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
@@ -111,7 +111,7 @@ namespace TechStore.Application.Services
                 issuer: jwtSettings["Issuer"],
                 audience: jwtSettings["Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddMinutes(Convert.ToDouble(jwtSettings["AccessTokenExpiryMinutes"])),
+                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(jwtSettings["AccessTokenExpiryMinutes"])),
                 signingCredentials: creds
             );
 
