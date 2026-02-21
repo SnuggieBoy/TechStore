@@ -10,5 +10,6 @@ namespace TechStore.Application.Interfaces.Repositories
         Task AddAsync(Order order);
         void Update(Order order);
         Task SaveChangesAsync();
+        Task<IAsyncDisposable> BeginTransactionAsync();
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TechStore.Application.DTOs.Common;
 using TechStore.Application.DTOs.Order;
+using TechStore.Application.DTOs.Product;
 using TechStore.Application.Interfaces.Services;
 
 namespace TechStore.API.Controllers
@@ -24,6 +25,7 @@ namespace TechStore.API.Controllers
 
         /// <summary>
         /// Place a new order (Customer). Validates stock and deducts automatically.
+        /// Duplicate product items are merged. Uses DB transaction for safety.
         /// </summary>
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<OrderDto>), StatusCodes.Status201Created)]
@@ -46,26 +48,26 @@ namespace TechStore.API.Controllers
         }
 
         /// <summary>
-        /// Get my order history (Customer).
+        /// Get my order history with pagination (Customer).
         /// </summary>
         [HttpGet("my-orders")]
-        [ProducesResponseType(typeof(ApiResponse<List<OrderDto>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetMyOrders()
+        [ProducesResponseType(typeof(ApiResponse<PagedResult<OrderDto>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetMyOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            var orders = await _orderService.GetMyOrdersAsync(GetUserId());
-            return Ok(ApiResponse<List<OrderDto>>.SuccessResponse(orders));
+            var orders = await _orderService.GetMyOrdersAsync(GetUserId(), page, pageSize);
+            return Ok(ApiResponse<PagedResult<OrderDto>>.SuccessResponse(orders));
         }
 
         /// <summary>
-        /// Get all orders (Admin only).
+        /// Get all orders with pagination (Admin only).
         /// </summary>
         [HttpGet]
         [Authorize(Roles = "Admin")]
-        [ProducesResponseType(typeof(ApiResponse<List<OrderDto>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAll()
+        [ProducesResponseType(typeof(ApiResponse<PagedResult<OrderDto>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            var orders = await _orderService.GetAllOrdersAsync();
-            return Ok(ApiResponse<List<OrderDto>>.SuccessResponse(orders));
+            var orders = await _orderService.GetAllOrdersAsync(page, pageSize);
+            return Ok(ApiResponse<PagedResult<OrderDto>>.SuccessResponse(orders));
         }
 
         /// <summary>
@@ -108,6 +110,32 @@ namespace TechStore.API.Controllers
             catch (KeyNotFoundException ex)
             {
                 return NotFound(ApiResponse<object>.ErrorResponse(ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<object>.ErrorResponse(ex.Message));
+            }
+        }
+
+        /// <summary>
+        /// Cancel my own Pending order (Customer). Restores stock automatically.
+        /// </summary>
+        [HttpPut("{id}/cancel")]
+        [ProducesResponseType(typeof(ApiResponse<OrderDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> CancelMyOrder(int id)
+        {
+            try
+            {
+                var order = await _orderService.CancelMyOrderAsync(GetUserId(), id);
+                return Ok(ApiResponse<OrderDto>.SuccessResponse(order, "Order cancelled successfully"));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse<object>.ErrorResponse(ex.Message));
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
             }
             catch (InvalidOperationException ex)
             {

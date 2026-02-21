@@ -13,6 +13,9 @@ namespace TechStore.Application.Interfaces.Repositories
         // Specs management
         void RemoveSpecs(IEnumerable<ProductSpec> specs);
 
+        // Order guard
+        Task<bool> HasOrderItemsAsync(int productId);
+
         Task SaveChangesAsync();
     }
 }

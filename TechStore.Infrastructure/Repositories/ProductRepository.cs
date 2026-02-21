@@ -50,6 +50,14 @@ namespace TechStore.Infrastructure.Repositories
             _context.ProductSpecs.RemoveRange(specs);
         }
 
+        /// <summary>
+        /// FIX #9: Check if a product has any order items (prevent deletion).
+        /// </summary>
+        public async Task<bool> HasOrderItemsAsync(int productId)
+        {
+            return await _context.OrderItems.AnyAsync(oi => oi.ProductId == productId);
+        }
+
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();

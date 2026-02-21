@@ -165,6 +165,11 @@ namespace TechStore.Application.Services
             var product = await _productRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Product with id {id} not found");
 
+            // FIX #9: Block deletion if product has order history
+            if (await _productRepository.HasOrderItemsAsync(id))
+                throw new InvalidOperationException(
+                    $"Cannot delete product '{product.Name}' because it has existing order records. Consider setting stock to 0 instead.");
+
             _productRepository.Delete(product);
             await _productRepository.SaveChangesAsync();
         }

@@ -57,5 +57,13 @@ namespace TechStore.Infrastructure.Repositories
         {
             await _context.SaveChangesAsync();
         }
+
+        /// <summary>
+        /// Fix #8: Begin a DB transaction for atomic stock operations.
+        /// </summary>
+        public async Task<IAsyncDisposable> BeginTransactionAsync()
+        {
+            return await _context.Database.BeginTransactionAsync();
+        }
     }
 }
