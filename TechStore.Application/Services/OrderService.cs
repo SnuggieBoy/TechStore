@@ -205,6 +205,31 @@ namespace TechStore.Application.Services
             return MapToDto(order);
         }
 
+        /// <summary>
+        /// Mock payment: simulate ~2s processing delay, then set order status from Pending to Paid.
+        /// </summary>
+        public async Task<OrderDto> PayOrderAsync(int userId, int orderId)
+        {
+            var order = await _orderRepository.GetByIdAsync(orderId)
+                ?? throw new KeyNotFoundException($"Order with id {orderId} not found");
+
+            if (order.UserId != userId)
+                throw new UnauthorizedAccessException("You can only pay for your own orders");
+
+            if (order.Status != "Pending")
+                throw new InvalidOperationException(
+                    $"Order cannot be paid. Current status: '{order.Status}'. Only 'Pending' orders can be paid.");
+
+            // Simulate payment processing delay (~2 seconds)
+            await Task.Delay(2000);
+
+            order.Status = "Paid";
+            _orderRepository.Update(order);
+            await _orderRepository.SaveChangesAsync();
+
+            return MapToDto(order);
+        }
+
         #region Private Helpers
 
         private void ValidateStatusTransition(string currentStatus, string newStatus)

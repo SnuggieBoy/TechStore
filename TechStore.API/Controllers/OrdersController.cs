@@ -118,6 +118,32 @@ namespace TechStore.API.Controllers
         }
 
         /// <summary>
+        /// Mock payment: simulate payment processing (~2s delay) then set order status to Paid.
+        /// </summary>
+        [HttpPost("pay")]
+        [ProducesResponseType(typeof(ApiResponse<OrderDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> PayOrder([FromBody] PayOrderDto dto)
+        {
+            try
+            {
+                var order = await _orderService.PayOrderAsync(GetUserId(), dto.OrderId);
+                return Ok(ApiResponse<OrderDto>.SuccessResponse(order, "Success"));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse<object>.ErrorResponse(ex.Message));
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<object>.ErrorResponse(ex.Message));
+            }
+        }
+
+        /// <summary>
         /// Cancel my own Pending order (Customer). Restores stock automatically.
         /// </summary>
         [HttpPut("{id}/cancel")]

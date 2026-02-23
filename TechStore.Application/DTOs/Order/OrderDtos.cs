@@ -30,6 +30,15 @@ namespace TechStore.Application.DTOs.Order
     }
 
     /// <summary>
+    /// Mock payment: pay for an order (Customer). Backend simulates ~2s delay then sets status to Paid.
+    /// </summary>
+    public class PayOrderDto
+    {
+        [Required]
+        public int OrderId { get; set; }
+    }
+
+    /// <summary>
     /// Update order status (Admin).
     /// </summary>
     public class UpdateOrderStatusDto

@@ -11,5 +11,7 @@ namespace TechStore.Application.Interfaces.Services
         Task<OrderDto> GetByIdAsync(int id);
         Task<OrderDto> UpdateStatusAsync(int id, UpdateOrderStatusDto dto);
         Task<OrderDto> CancelMyOrderAsync(int userId, int orderId); // Customer self-cancel
+        /// <summary>Mock payment: simulate ~2s delay then set order status from Pending to Paid.</summary>
+        Task<OrderDto> PayOrderAsync(int userId, int orderId);
     }
 }

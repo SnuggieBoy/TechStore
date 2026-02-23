@@ -1149,6 +1149,51 @@
                             }
                         }
                     ]
+                },
+                {
+                    "name": "4.9 Mock Pay Order",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{customerToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"orderId\": {{orderId}}\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/orders/pay",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders",
+                                "pay"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Mock Pay - 200', () => pm.response.to.have.status(200));",
+                                    "var json = pm.response.json();",
+                                    "pm.test('success is true', () => pm.expect(json.success).to.be.true);",
+                                    "pm.test('Message=Success', () => pm.expect(json.message).to.eql('Success'));",
+                                    "pm.test('Status=Paid', () => pm.expect(json.data.status).to.eql('Paid'));"
+                                ]
+                            }
+                        }
+                    ]
                 }
             ]
         },
