@@ -124,22 +124,28 @@ var app = builder.Build();
 // Global Exception Handling Middleware (must be first)
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// --- SỬA ĐOẠN NÀY ---
+// Cho phép chạy Swagger ở cả môi trường Production (Azure)
+app.UseSwagger();
+
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-    app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "TechStore API v1");
 
-// CORS must be before Auth
+    // Dòng này cực kỳ quan trọng: 
+    // Nó biến Swagger thành trang chủ (Root). 
+    // Bạn chỉ cần vào https://techstore393.azurewebsites.net/ là thấy luôn Swagger.
+    c.RoutePrefix = string.Empty;
+});
+
+// Nếu bạn vẫn muốn giữ lệnh Redirect cho chắc ăn thì để dòng này ra ngoài if luôn
+app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
+// --------------------
+
+// Các middleware khác giữ nguyên
 app.UseCors("AllowAll");
-
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
