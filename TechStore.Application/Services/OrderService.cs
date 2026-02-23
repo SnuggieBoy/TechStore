@@ -10,11 +10,13 @@ namespace TechStore.Application.Services
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IProductRepository _productRepository;
+        private readonly IEmailService _emailService;
 
-        public OrderService(IOrderRepository orderRepository, IProductRepository productRepository)
+        public OrderService(IOrderRepository orderRepository, IProductRepository productRepository, IEmailService emailService)
         {
             _orderRepository = orderRepository;
             _productRepository = productRepository;
+            _emailService = emailService;
         }
 
         /// <summary>
@@ -88,7 +90,25 @@ namespace TechStore.Application.Services
 
                 // Reload with navigation properties
                 var created = await _orderRepository.GetByIdAsync(order.Id);
-                return MapToDto(created!);
+                var orderDto = MapToDto(created!);
+
+                // Send order confirmation email (fire-and-forget; failure does not fail the request)
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(created!.User?.Email))
+                        await _emailService.SendOrderConfirmationAsync(
+                            created.User.Email,
+                            created.User.FullName ?? created.User.Username ?? "Khách hàng",
+                            created.Id,
+                            created.TotalAmount,
+                            created.Status);
+                }
+                catch
+                {
+                    // Email failure is non-fatal; order already saved
+                }
+
+                return orderDto;
             }
             catch
             {

@@ -46,6 +46,25 @@ namespace TechStore.Application.Services
                 query = query.Where(p => p.Price <= filter.MaxPrice.Value);
             }
 
+            // Filter by RAM spec (SpecKey = "RAM", SpecValue contains filter)
+            if (!string.IsNullOrWhiteSpace(filter.Ram))
+            {
+                var ram = filter.Ram.Trim();
+                query = query.Where(p => p.Specs != null && p.Specs.Any(s =>
+                    string.Equals(s.SpecKey, "RAM", StringComparison.OrdinalIgnoreCase) &&
+                    s.SpecValue.Contains(ram, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            // Filter by Chip/CPU spec (SpecKey = "CPU" or "Chip", SpecValue contains filter)
+            if (!string.IsNullOrWhiteSpace(filter.Chip))
+            {
+                var chip = filter.Chip.Trim();
+                query = query.Where(p => p.Specs != null && p.Specs.Any(s =>
+                    (string.Equals(s.SpecKey, "CPU", StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(s.SpecKey, "Chip", StringComparison.OrdinalIgnoreCase)) &&
+                    s.SpecValue.Contains(chip, StringComparison.OrdinalIgnoreCase)));
+            }
+
             // Sorting
             query = filter.SortBy?.ToLower() switch
             {

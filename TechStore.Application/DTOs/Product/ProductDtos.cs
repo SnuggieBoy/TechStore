@@ -95,6 +95,10 @@ namespace TechStore.Application.DTOs.Product
         public int? CategoryId { get; set; }
         public decimal? MinPrice { get; set; }
         public decimal? MaxPrice { get; set; }
+        /// <summary>Filter by RAM spec (e.g. "18GB", "8"). Matches products whose RAM spec contains this value.</summary>
+        public string? Ram { get; set; }
+        /// <summary>Filter by Chip/CPU spec (e.g. "M3", "A18"). Matches products whose CPU/Chip spec contains this value.</summary>
+        public string? Chip { get; set; }
         public string? SortBy { get; set; } = "CreatedAt"; // Name, Price, CreatedAt
         public bool SortDescending { get; set; } = true;
         [Range(1, int.MaxValue)]

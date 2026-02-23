@@ -90,6 +90,7 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IReportService, TechStore.Infrastructure.Services.ReportService>();
+builder.Services.AddScoped<IEmailService, TechStore.Infrastructure.Services.EmailService>();
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
