@@ -1,3 +1,4 @@
+using System;
 using Microsoft.EntityFrameworkCore;
 using TechStore.Application.Interfaces.Repositories;
 using TechStore.Domain.Entities;
@@ -43,6 +44,15 @@ namespace TechStore.Infrastructure.Repositories
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
                 .FirstOrDefaultAsync(o => o.Id == id);
+        }
+
+        public async Task<Order?> GetByPublicIdAsync(Guid publicId)
+        {
+            return await _context.Orders
+                .Include(o => o.User)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .FirstOrDefaultAsync(o => o.PublicId == publicId);
         }
 
         public async Task AddAsync(Order order)

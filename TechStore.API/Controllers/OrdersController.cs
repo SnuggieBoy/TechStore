@@ -34,7 +34,7 @@ namespace TechStore.API.Controllers
             try
             {
                 var order = await _orderService.CreateOrderAsync(GetUserId(), dto);
-                return CreatedAtAction(nameof(GetById), new { id = order.Id },
+                return CreatedAtAction(nameof(GetById), new { id = order.PublicId },
                     ApiResponse<OrderDto>.SuccessResponse(order, "Order placed successfully"));
             }
             catch (KeyNotFoundException ex)
@@ -75,11 +75,11 @@ namespace TechStore.API.Controllers
         /// </summary>
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<OrderDto>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetById(string id)
         {
             try
             {
-                var order = await _orderService.GetByIdAsync(id);
+                var order = await _orderService.GetByPublicIdAsync(id);
 
                 // Customer can only see their own orders
                 var role = User.FindFirstValue(ClaimTypes.Role);
@@ -100,7 +100,7 @@ namespace TechStore.API.Controllers
         [HttpPut("{id}/status")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(ApiResponse<OrderDto>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateOrderStatusDto dto)
+        public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateOrderStatusDto dto)
         {
             try
             {
@@ -148,7 +148,7 @@ namespace TechStore.API.Controllers
         /// </summary>
         [HttpPut("{id}/cancel")]
         [ProducesResponseType(typeof(ApiResponse<OrderDto>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> CancelMyOrder(int id)
+        public async Task<IActionResult> CancelMyOrder(string id)
         {
             try
             {

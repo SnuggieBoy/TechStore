@@ -1,3 +1,4 @@
+using System;
 using TechStore.Application.DTOs.Order;
 using TechStore.Application.DTOs.Product;
 using TechStore.Application.Interfaces.Repositories;
@@ -28,9 +29,10 @@ namespace TechStore.Application.Services
             var shippingAddress = SanitizeString(dto.ShippingAddress);
             var paymentMethod = SanitizeString(dto.PaymentMethod ?? "COD");
 
-            // FIX #2: Merge duplicate ProductId items (combine quantities)
+            // FIX #2: Merge duplicate ProductId (PublicId) items (combine quantities)
             var mergedItems = dto.Items
-                .GroupBy(i => i.ProductId)
+                .GroupBy(i => i.ProductId?.Trim() ?? string.Empty)
+                .Where(g => !string.IsNullOrEmpty(g.Key))
                 .Select(g => new CreateOrderItemDto
                 {
                     ProductId = g.Key,
@@ -48,11 +50,13 @@ namespace TechStore.Application.Services
                 var orderItems = new List<OrderItem>();
                 decimal totalAmount = 0;
 
-                // Validate all products and stock
+                // Validate all products and stock (ProductId is PublicId string)
                 foreach (var item in mergedItems)
                 {
-                    var product = await _productRepository.GetByIdAsync(item.ProductId)
-                        ?? throw new KeyNotFoundException($"Product with id {item.ProductId} not found");
+                    if (!Guid.TryParse(item.ProductId, out var productPublicId))
+                        throw new KeyNotFoundException("Product not found");
+                    var product = await _productRepository.GetByPublicIdAsync(productPublicId)
+                        ?? throw new KeyNotFoundException("Product not found");
 
                     if (product.StockQuantity < item.Quantity)
                         throw new InvalidOperationException(
@@ -67,7 +71,7 @@ namespace TechStore.Application.Services
 
                     orderItems.Add(new OrderItem
                     {
-                        ProductId = item.ProductId,
+                        ProductId = product.Id,
                         Quantity = item.Quantity,
                         UnitPrice = unitPrice
                     });
@@ -169,10 +173,11 @@ namespace TechStore.Application.Services
             };
         }
 
-        public async Task<OrderDto> GetByIdAsync(int id)
+        public async Task<OrderDto> GetByPublicIdAsync(string publicId)
         {
-            var order = await _orderRepository.GetByIdAsync(id)
-                ?? throw new KeyNotFoundException($"Order with id {id} not found");
+            var guid = ParseOrderPublicId(publicId);
+            var order = await _orderRepository.GetByPublicIdAsync(guid)
+                ?? throw new KeyNotFoundException("Order not found");
 
             return MapToDto(order);
         }
@@ -180,10 +185,11 @@ namespace TechStore.Application.Services
         /// <summary>
         /// Admin update status with validated transitions.
         /// </summary>
-        public async Task<OrderDto> UpdateStatusAsync(int id, UpdateOrderStatusDto dto)
+        public async Task<OrderDto> UpdateStatusAsync(string orderPublicId, UpdateOrderStatusDto dto)
         {
-            var order = await _orderRepository.GetByIdAsync(id)
-                ?? throw new KeyNotFoundException($"Order with id {id} not found");
+            var guid = ParseOrderPublicId(orderPublicId);
+            var order = await _orderRepository.GetByPublicIdAsync(guid)
+                ?? throw new KeyNotFoundException("Order not found");
 
             ValidateStatusTransition(order.Status, dto.Status);
 
@@ -220,10 +226,11 @@ namespace TechStore.Application.Services
         /// <summary>
         /// FIX #6: Customer can cancel their own Pending orders only.
         /// </summary>
-        public async Task<OrderDto> CancelMyOrderAsync(int userId, int orderId)
+        public async Task<OrderDto> CancelMyOrderAsync(int userId, string orderPublicId)
         {
-            var order = await _orderRepository.GetByIdAsync(orderId)
-                ?? throw new KeyNotFoundException($"Order with id {orderId} not found");
+            var guid = ParseOrderPublicId(orderPublicId);
+            var order = await _orderRepository.GetByPublicIdAsync(guid)
+                ?? throw new KeyNotFoundException("Order not found");
 
             if (order.UserId != userId)
                 throw new UnauthorizedAccessException("You can only cancel your own orders");
@@ -260,10 +267,11 @@ namespace TechStore.Application.Services
         /// <summary>
         /// Mock payment: simulate ~2s processing delay, then set order status from Pending to Paid.
         /// </summary>
-        public async Task<OrderDto> PayOrderAsync(int userId, int orderId)
+        public async Task<OrderDto> PayOrderAsync(int userId, string orderPublicId)
         {
-            var order = await _orderRepository.GetByIdAsync(orderId)
-                ?? throw new KeyNotFoundException($"Order with id {orderId} not found");
+            var guid = ParseOrderPublicId(orderPublicId);
+            var order = await _orderRepository.GetByPublicIdAsync(guid)
+                ?? throw new KeyNotFoundException("Order not found");
 
             if (order.UserId != userId)
                 throw new UnauthorizedAccessException("You can only pay for your own orders");
@@ -342,11 +350,19 @@ namespace TechStore.Application.Services
             return sanitized.Trim();
         }
 
+        private static Guid ParseOrderPublicId(string publicId)
+        {
+            if (string.IsNullOrWhiteSpace(publicId) || !Guid.TryParse(publicId, out var guid))
+                throw new ArgumentException("Invalid order ID format.");
+            return guid;
+        }
+
         private static OrderDto MapToDto(Order o)
         {
             return new OrderDto
             {
                 Id = o.Id,
+                PublicId = o.PublicId.ToString(),
                 UserId = o.UserId,
                 Username = o.User?.Username ?? string.Empty,
                 OrderDate = o.OrderDate,

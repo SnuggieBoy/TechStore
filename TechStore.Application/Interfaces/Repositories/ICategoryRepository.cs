@@ -1,3 +1,4 @@
+using System;
 using TechStore.Domain.Entities;
 
 namespace TechStore.Application.Interfaces.Repositories
@@ -6,6 +7,7 @@ namespace TechStore.Application.Interfaces.Repositories
     {
         Task<List<Category>> GetAllAsync();
         Task<Category?> GetByIdAsync(int id);
+        Task<Category?> GetByPublicIdAsync(Guid publicId);
         Task<Category?> GetByNameAsync(string name);
         Task AddAsync(Category category);
         void Update(Category category);

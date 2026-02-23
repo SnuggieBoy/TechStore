@@ -1,3 +1,4 @@
+using System;
 using Microsoft.EntityFrameworkCore;
 using TechStore.Application.Interfaces.Repositories;
 using TechStore.Domain.Entities;
@@ -28,6 +29,13 @@ namespace TechStore.Infrastructure.Repositories
                 .AsNoTracking()
                 .Include(c => c.Products)
                 .FirstOrDefaultAsync(c => c.Id == id);
+        }
+
+        public async Task<Category?> GetByPublicIdAsync(Guid publicId)
+        {
+            return await _context.Categories
+                .Include(c => c.Products)
+                .FirstOrDefaultAsync(c => c.PublicId == publicId);
         }
 
         public async Task<Category?> GetByNameAsync(string name)

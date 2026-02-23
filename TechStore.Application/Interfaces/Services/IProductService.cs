@@ -6,8 +6,9 @@ namespace TechStore.Application.Interfaces.Services
     {
         Task<PagedResult<ProductDto>> GetAllAsync(ProductFilterDto filter);
         Task<ProductDto> GetByIdAsync(int id);
+        Task<ProductDto> GetByPublicIdAsync(string publicId);
         Task<ProductDto> CreateAsync(CreateProductDto dto);
-        Task<ProductDto> UpdateAsync(int id, UpdateProductDto dto);
-        Task DeleteAsync(int id);
+        Task<ProductDto> UpdateAsync(string productPublicId, UpdateProductDto dto);
+        Task DeleteAsync(string productPublicId);
     }
 }

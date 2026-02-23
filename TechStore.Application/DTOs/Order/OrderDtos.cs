@@ -19,10 +19,11 @@ namespace TechStore.Application.DTOs.Order
         public string ShippingAddress { get; set; } = string.Empty;
     }
 
+    /// <summary>ProductId is Product.PublicId (GUID string) from product list.</summary>
     public class CreateOrderItemDto
     {
         [Required]
-        public int ProductId { get; set; }
+        public string ProductId { get; set; } = string.Empty; // PublicId (GUID)
 
         [Required]
         [Range(1, int.MaxValue, ErrorMessage = "Quantity must be at least 1")]
@@ -30,12 +31,12 @@ namespace TechStore.Application.DTOs.Order
     }
 
     /// <summary>
-    /// Mock payment: pay for an order (Customer). Backend simulates ~2s delay then sets status to Paid.
+    /// Mock payment: pay for an order (Customer). Use PublicId (GUID) to avoid exposing sequential ID.
     /// </summary>
     public class PayOrderDto
     {
         [Required]
-        public int OrderId { get; set; }
+        public string OrderId { get; set; } = string.Empty; // PublicId (GUID string), e.g. "a1b2c3d4-e5f6-..."
     }
 
     /// <summary>
@@ -52,6 +53,8 @@ namespace TechStore.Application.DTOs.Order
     public class OrderDto
     {
         public int Id { get; set; }
+        /// <summary>Use this in API routes (cancel, pay, get by id). Not guessable.</summary>
+        public string PublicId { get; set; } = string.Empty;
         public int UserId { get; set; }
         public string Username { get; set; } = string.Empty;
         public DateTime OrderDate { get; set; }

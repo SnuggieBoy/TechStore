@@ -34,11 +34,11 @@ namespace TechStore.API.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<CategoryDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetById(string id)
         {
             try
             {
-                var category = await _categoryService.GetByIdAsync(id);
+                var category = await _categoryService.GetByPublicIdAsync(id);
                 return Ok(ApiResponse<CategoryDto>.SuccessResponse(category));
             }
             catch (KeyNotFoundException ex)
@@ -59,7 +59,7 @@ namespace TechStore.API.Controllers
             try
             {
                 var category = await _categoryService.CreateAsync(dto);
-                return CreatedAtAction(nameof(GetById), new { id = category.Id },
+                return CreatedAtAction(nameof(GetById), new { id = category.PublicId },
                     ApiResponse<CategoryDto>.SuccessResponse(category, "Category created successfully"));
             }
             catch (ArgumentException ex)
@@ -75,7 +75,7 @@ namespace TechStore.API.Controllers
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(ApiResponse<CategoryDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Update(int id, [FromBody] UpdateCategoryDto dto)
+        public async Task<IActionResult> Update(string id, [FromBody] UpdateCategoryDto dto)
         {
             try
             {
@@ -99,7 +99,7 @@ namespace TechStore.API.Controllers
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(string id)
         {
             try
             {

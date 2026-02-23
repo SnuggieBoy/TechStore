@@ -8,10 +8,10 @@ namespace TechStore.Application.Interfaces.Services
         Task<OrderDto> CreateOrderAsync(int userId, CreateOrderDto dto);
         Task<PagedResult<OrderDto>> GetMyOrdersAsync(int userId, int page = 1, int pageSize = 10);
         Task<PagedResult<OrderDto>> GetAllOrdersAsync(int page = 1, int pageSize = 10); // Admin
-        Task<OrderDto> GetByIdAsync(int id);
-        Task<OrderDto> UpdateStatusAsync(int id, UpdateOrderStatusDto dto);
-        Task<OrderDto> CancelMyOrderAsync(int userId, int orderId); // Customer self-cancel
+        Task<OrderDto> GetByPublicIdAsync(string publicId);
+        Task<OrderDto> UpdateStatusAsync(string orderPublicId, UpdateOrderStatusDto dto);
+        Task<OrderDto> CancelMyOrderAsync(int userId, string orderPublicId);
         /// <summary>Mock payment: simulate ~2s delay then set order status from Pending to Paid.</summary>
-        Task<OrderDto> PayOrderAsync(int userId, int orderId);
+        Task<OrderDto> PayOrderAsync(int userId, string orderPublicId);
     }
 }

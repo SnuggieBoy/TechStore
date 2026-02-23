@@ -1,3 +1,4 @@
+using System;
 using TechStore.Application.DTOs.Product;
 using TechStore.Application.Interfaces.Repositories;
 using TechStore.Application.Interfaces.Services;
@@ -105,6 +106,15 @@ namespace TechStore.Application.Services
             return MapToDto(product);
         }
 
+        public async Task<ProductDto> GetByPublicIdAsync(string publicId)
+        {
+            if (string.IsNullOrWhiteSpace(publicId) || !Guid.TryParse(publicId, out var guid))
+                throw new KeyNotFoundException("Product not found");
+            var product = await _productRepository.GetByPublicIdAsync(guid)
+                ?? throw new KeyNotFoundException("Product not found");
+            return MapToDto(product);
+        }
+
         public async Task<ProductDto> CreateAsync(CreateProductDto dto)
         {
             // Validate category exists
@@ -140,10 +150,12 @@ namespace TechStore.Application.Services
             return MapToDto(created!);
         }
 
-        public async Task<ProductDto> UpdateAsync(int id, UpdateProductDto dto)
+        public async Task<ProductDto> UpdateAsync(string productPublicId, UpdateProductDto dto)
         {
-            var product = await _productRepository.GetByIdAsync(id)
-                ?? throw new KeyNotFoundException($"Product with id {id} not found");
+            if (string.IsNullOrWhiteSpace(productPublicId) || !Guid.TryParse(productPublicId, out var guid))
+                throw new KeyNotFoundException("Product not found");
+            var product = await _productRepository.GetByPublicIdAsync(guid)
+                ?? throw new KeyNotFoundException("Product not found");
 
             // Validate category exists
             var category = await _categoryRepository.GetByIdAsync(dto.CategoryId)
@@ -166,7 +178,7 @@ namespace TechStore.Application.Services
             {
                 product.Specs = dto.Specs.Select(s => new ProductSpec
                 {
-                    ProductId = id,
+                    ProductId = product.Id,
                     SpecKey = s.SpecKey.Trim(),
                     SpecValue = s.SpecValue.Trim()
                 }).ToList();
@@ -175,17 +187,19 @@ namespace TechStore.Application.Services
             _productRepository.Update(product);
             await _productRepository.SaveChangesAsync();
 
-            var updated = await _productRepository.GetByIdAsync(id);
+            var updated = await _productRepository.GetByPublicIdAsync(guid);
             return MapToDto(updated!);
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(string productPublicId)
         {
-            var product = await _productRepository.GetByIdAsync(id)
-                ?? throw new KeyNotFoundException($"Product with id {id} not found");
+            if (string.IsNullOrWhiteSpace(productPublicId) || !Guid.TryParse(productPublicId, out var guid))
+                throw new KeyNotFoundException("Product not found");
+            var product = await _productRepository.GetByPublicIdAsync(guid)
+                ?? throw new KeyNotFoundException("Product not found");
 
             // FIX #9: Block deletion if product has order history
-            if (await _productRepository.HasOrderItemsAsync(id))
+            if (await _productRepository.HasOrderItemsAsync(product.Id))
                 throw new InvalidOperationException(
                     $"Cannot delete product '{product.Name}' because it has existing order records. Consider setting stock to 0 instead.");
 
@@ -198,6 +212,7 @@ namespace TechStore.Application.Services
             return new ProductDto
             {
                 Id = p.Id,
+                PublicId = p.PublicId.ToString(),
                 Name = p.Name,
                 Description = p.Description,
                 Price = p.Price,

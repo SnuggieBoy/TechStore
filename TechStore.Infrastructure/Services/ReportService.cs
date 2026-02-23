@@ -17,6 +17,7 @@ namespace TechStore.Infrastructure.Services
         public async Task<RevenueReportDto> GetRevenueReportAsync()
         {
             var orders = await _context.Orders
+                .AsNoTracking()
                 .Include(o => o.OrderItems)
                 .ToListAsync();
 
@@ -50,6 +51,7 @@ namespace TechStore.Infrastructure.Services
         public async Task<List<BestSellingProductDto>> GetBestSellingProductsAsync(int top = 10)
         {
             var orderItems = await _context.OrderItems
+                .AsNoTracking()
                 .Include(oi => oi.Product)
                     .ThenInclude(p => p.Category)
                 .Include(oi => oi.Order)
@@ -75,17 +77,19 @@ namespace TechStore.Infrastructure.Services
 
         public async Task<DashboardDto> GetDashboardAsync()
         {
-            var totalUsers = await _context.Users.CountAsync();
-            var totalProducts = await _context.Products.CountAsync();
-            var totalCategories = await _context.Categories.CountAsync();
-            var totalOrders = await _context.Orders.CountAsync();
+            var totalUsers = await _context.Users.AsNoTracking().CountAsync();
+            var totalProducts = await _context.Products.AsNoTracking().CountAsync();
+            var totalCategories = await _context.Categories.AsNoTracking().CountAsync();
+            var totalOrders = await _context.Orders.AsNoTracking().CountAsync();
             var totalRevenue = await _context.Orders
+                .AsNoTracking()
                 .Where(o => o.Status == "Delivered")
                 .SumAsync(o => o.TotalAmount);
 
             var topProducts = await GetBestSellingProductsAsync(5);
 
             var recentOrders = await _context.Orders
+                .AsNoTracking()
                 .Include(o => o.User)
                 .OrderByDescending(o => o.OrderDate)
                 .Take(10)

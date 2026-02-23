@@ -28,5 +28,6 @@ Thumbs.db
 
 ## Secrets - DO NOT COMMIT
 appsettings.Production.json
+appsettings.Development.json
 *.pfx
 *.p12

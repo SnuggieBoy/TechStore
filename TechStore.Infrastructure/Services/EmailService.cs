@@ -197,6 +197,8 @@ namespace TechStore.Infrastructure.Services
 
         private async Task SendEmailAsync(string toEmail, string subject, string body, bool isBodyHtml, CancellationToken ct = default)
         {
+            // Sanitize recipient to prevent header injection (newlines, multiple addresses)
+            var sanitizedEmail = SanitizeEmailAddress(toEmail);
             try
             {
                 if (string.IsNullOrWhiteSpace(_smtpHost) || string.IsNullOrWhiteSpace(_smtpUser))
@@ -206,8 +208,7 @@ namespace TechStore.Infrastructure.Services
                     return;
                 }
 
-                // Sanitize recipient to prevent header injection (newlines, multiple addresses)
-                var sanitizedEmail = SanitizeEmailAddress(toEmail);
+                if (string.IsNullOrWhiteSpace(sanitizedEmail))
                 if (string.IsNullOrWhiteSpace(sanitizedEmail))
                 {
                     _logger.LogWarning("Email skipped: invalid or empty recipient.");

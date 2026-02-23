@@ -34,11 +34,11 @@ namespace TechStore.API.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<ProductDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetById(string id)
         {
             try
             {
-                var product = await _productService.GetByIdAsync(id);
+                var product = await _productService.GetByPublicIdAsync(id);
                 return Ok(ApiResponse<ProductDto>.SuccessResponse(product));
             }
             catch (KeyNotFoundException ex)
@@ -59,7 +59,7 @@ namespace TechStore.API.Controllers
             try
             {
                 var product = await _productService.CreateAsync(dto);
-                return CreatedAtAction(nameof(GetById), new { id = product.Id },
+                return CreatedAtAction(nameof(GetById), new { id = product.PublicId },
                     ApiResponse<ProductDto>.SuccessResponse(product, "Product created successfully"));
             }
             catch (KeyNotFoundException ex)
@@ -75,7 +75,7 @@ namespace TechStore.API.Controllers
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(ApiResponse<ProductDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Update(int id, [FromBody] UpdateProductDto dto)
+        public async Task<IActionResult> Update(string id, [FromBody] UpdateProductDto dto)
         {
             try
             {
@@ -95,7 +95,7 @@ namespace TechStore.API.Controllers
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(string id)
         {
             try
             {

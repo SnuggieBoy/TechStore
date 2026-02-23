@@ -10,6 +10,9 @@ namespace TechStore.Domain.Entities
         [Key]
         public int Id { get; set; }
 
+        /// <summary>Unguessable ID for API (avoids enumeration).</summary>
+        public Guid PublicId { get; set; } = Guid.NewGuid();
+
         [Required]
         [MaxLength(50)]
         public string Username { get; set; } = string.Empty;
@@ -45,6 +48,8 @@ namespace TechStore.Domain.Entities
         [Key]
         public int Id { get; set; }
 
+        public Guid PublicId { get; set; } = Guid.NewGuid();
+
         [Required]
         [MaxLength(100)]
         public string Name { get; set; } = string.Empty;
@@ -59,6 +64,8 @@ namespace TechStore.Domain.Entities
     {
         [Key]
         public int Id { get; set; }
+
+        public Guid PublicId { get; set; } = Guid.NewGuid();
 
         [Required]
         [MaxLength(200)]
@@ -103,6 +110,9 @@ namespace TechStore.Domain.Entities
     {
         [Key]
         public int Id { get; set; }
+
+        /// <summary>Unguessable ID for API (avoids enumeration / "hack id").</summary>
+        public Guid PublicId { get; set; } = Guid.NewGuid();
 
         public int UserId { get; set; }
         public User User { get; set; } = null!;

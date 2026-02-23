@@ -1,3 +1,4 @@
+using System;
 using TechStore.Application.DTOs.Category;
 using TechStore.Application.Interfaces.Repositories;
 using TechStore.Application.Interfaces.Services;
@@ -28,6 +29,15 @@ namespace TechStore.Application.Services
             return MapToDto(category);
         }
 
+        public async Task<CategoryDto> GetByPublicIdAsync(string publicId)
+        {
+            if (string.IsNullOrWhiteSpace(publicId) || !Guid.TryParse(publicId, out var guid))
+                throw new KeyNotFoundException("Category not found");
+            var category = await _categoryRepository.GetByPublicIdAsync(guid)
+                ?? throw new KeyNotFoundException("Category not found");
+            return MapToDto(category);
+        }
+
         public async Task<CategoryDto> CreateAsync(CreateCategoryDto dto)
         {
             // Check duplicate name
@@ -47,14 +57,16 @@ namespace TechStore.Application.Services
             return MapToDto(category);
         }
 
-        public async Task<CategoryDto> UpdateAsync(int id, UpdateCategoryDto dto)
+        public async Task<CategoryDto> UpdateAsync(string categoryPublicId, UpdateCategoryDto dto)
         {
-            var category = await _categoryRepository.GetByIdAsync(id)
-                ?? throw new KeyNotFoundException($"Category with id {id} not found");
+            if (string.IsNullOrWhiteSpace(categoryPublicId) || !Guid.TryParse(categoryPublicId, out var guid))
+                throw new KeyNotFoundException("Category not found");
+            var category = await _categoryRepository.GetByPublicIdAsync(guid)
+                ?? throw new KeyNotFoundException("Category not found");
 
             // Check duplicate name (exclude current)
             var existing = await _categoryRepository.GetByNameAsync(dto.Name.Trim());
-            if (existing != null && existing.Id != id)
+            if (existing != null && existing.Id != category.Id)
                 throw new ArgumentException($"Category '{dto.Name}' already exists");
 
             category.Name = dto.Name.Trim();
@@ -66,10 +78,12 @@ namespace TechStore.Application.Services
             return MapToDto(category);
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(string categoryPublicId)
         {
-            var category = await _categoryRepository.GetByIdAsync(id)
-                ?? throw new KeyNotFoundException($"Category with id {id} not found");
+            if (string.IsNullOrWhiteSpace(categoryPublicId) || !Guid.TryParse(categoryPublicId, out var guid))
+                throw new KeyNotFoundException("Category not found");
+            var category = await _categoryRepository.GetByPublicIdAsync(guid)
+                ?? throw new KeyNotFoundException("Category not found");
 
             if (category.Products != null && category.Products.Count > 0)
                 throw new InvalidOperationException($"Cannot delete category '{category.Name}' because it has {category.Products.Count} product(s)");
@@ -83,6 +97,7 @@ namespace TechStore.Application.Services
             return new CategoryDto
             {
                 Id = c.Id,
+                PublicId = c.PublicId.ToString(),
                 Name = c.Name,
                 Description = c.Description,
                 ProductCount = c.Products?.Count ?? 0
