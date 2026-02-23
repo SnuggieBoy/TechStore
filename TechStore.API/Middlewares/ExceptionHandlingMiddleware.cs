@@ -51,15 +51,24 @@ namespace TechStore.API.Middlewares
 
             context.Response.StatusCode = statusCode;
 
-            // FIX #1: Only expose error details for 4xx in production. Hide internals for 500.
-            var errorDetails = statusCode >= 500 && !_env.IsDevelopment()
+            // In production, do not expose detailed 4xx messages (reduces enumeration / info leakage).
+            var isDev = _env.IsDevelopment();
+            var clientMessage = message;
+            if (!isDev)
+            {
+                if (statusCode == StatusCodes.Status404NotFound) clientMessage = "Resource not found.";
+                else if (statusCode == StatusCodes.Status400BadRequest) clientMessage = "Invalid request.";
+                _logger.LogInformation("4xx response (detail not shown to client): {Detail}", exception.Message);
+            }
+            // For 500, hide internals in non-Dev (already done below via errorDetails).
+            var errorDetails = statusCode >= 500 && !isDev
                 ? new[] { "An unexpected error occurred. Please try again later." }
-                : new[] { exception.Message };
+                : new[] { statusCode >= 500 ? exception.Message : clientMessage };
 
             var response = new
             {
                 success = false,
-                message = message,
+                message = statusCode >= 500 ? message : clientMessage,
                 data = (object?)null,
                 errors = errorDetails
             };

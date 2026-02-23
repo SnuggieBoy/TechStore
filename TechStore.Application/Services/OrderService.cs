@@ -187,6 +187,8 @@ namespace TechStore.Application.Services
 
             ValidateStatusTransition(order.Status, dto.Status);
 
+            var previousStatus = order.Status;
+
             // If cancelling, restore stock
             if (dto.Status == "Cancelled")
             {
@@ -196,6 +198,21 @@ namespace TechStore.Application.Services
             order.Status = dto.Status;
             _orderRepository.Update(order);
             await _orderRepository.SaveChangesAsync();
+
+            // Notify customer by email (real-world: admin status update → always inform customer)
+            try
+            {
+                if (string.IsNullOrWhiteSpace(order.User?.Email)) return MapToDto(order);
+                var customerName = order.User.FullName ?? order.User.Username ?? "Khách hàng";
+                if (dto.Status == "Cancelled")
+                    await _emailService.SendOrderCancelledAsync(order.User.Email, customerName, order.Id, order.TotalAmount);
+                else
+                    await _emailService.SendOrderStatusUpdatedAsync(order.User.Email, customerName, order.Id, order.TotalAmount, previousStatus, dto.Status);
+            }
+            catch
+            {
+                // Email failure is non-fatal
+            }
 
             return MapToDto(order);
         }
@@ -222,6 +239,21 @@ namespace TechStore.Application.Services
             _orderRepository.Update(order);
             await _orderRepository.SaveChangesAsync();
 
+            // Send order cancelled email
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(order.User?.Email))
+                    await _emailService.SendOrderCancelledAsync(
+                        order.User.Email,
+                        order.User.FullName ?? order.User.Username ?? "Khách hàng",
+                        order.Id,
+                        order.TotalAmount);
+            }
+            catch
+            {
+                // Email failure is non-fatal
+            }
+
             return MapToDto(order);
         }
 
@@ -246,6 +278,21 @@ namespace TechStore.Application.Services
             order.Status = "Paid";
             _orderRepository.Update(order);
             await _orderRepository.SaveChangesAsync();
+
+            // Send payment success email (full payment flow)
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(order.User?.Email))
+                    await _emailService.SendPaymentSuccessAsync(
+                        order.User.Email,
+                        order.User.FullName ?? order.User.Username ?? "Khách hàng",
+                        order.Id,
+                        order.TotalAmount);
+            }
+            catch
+            {
+                // Email failure is non-fatal
+            }
 
             return MapToDto(order);
         }

@@ -17,6 +17,7 @@ namespace TechStore.Infrastructure.Repositories
         public async Task<List<Product>> GetAllAsync()
         {
             return await _context.Products
+                .AsNoTracking()
                 .Include(p => p.Category)
                 .Include(p => p.Specs)
                 .ToListAsync();
@@ -25,6 +26,7 @@ namespace TechStore.Infrastructure.Repositories
         public async Task<Product?> GetByIdAsync(int id)
         {
             return await _context.Products
+                .AsNoTracking()
                 .Include(p => p.Category)
                 .Include(p => p.Specs)
                 .FirstOrDefaultAsync(p => p.Id == id);
@@ -55,7 +57,7 @@ namespace TechStore.Infrastructure.Repositories
         /// </summary>
         public async Task<bool> HasOrderItemsAsync(int productId)
         {
-            return await _context.OrderItems.AnyAsync(oi => oi.ProductId == productId);
+            return await _context.OrderItems.AsNoTracking().AnyAsync(oi => oi.ProductId == productId);
         }
 
         public async Task SaveChangesAsync()

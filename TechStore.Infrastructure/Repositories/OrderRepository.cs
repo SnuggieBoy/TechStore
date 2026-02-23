@@ -17,6 +17,7 @@ namespace TechStore.Infrastructure.Repositories
         public async Task<List<Order>> GetAllAsync()
         {
             return await _context.Orders
+                .AsNoTracking()
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
@@ -27,6 +28,7 @@ namespace TechStore.Infrastructure.Repositories
         public async Task<List<Order>> GetByUserIdAsync(int userId)
         {
             return await _context.Orders
+                .AsNoTracking()
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
                 .Where(o => o.UserId == userId)

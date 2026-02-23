@@ -17,6 +17,7 @@ namespace TechStore.Infrastructure.Repositories
         public async Task<List<Category>> GetAllAsync()
         {
             return await _context.Categories
+                .AsNoTracking()
                 .Include(c => c.Products)
                 .ToListAsync();
         }
@@ -24,6 +25,7 @@ namespace TechStore.Infrastructure.Repositories
         public async Task<Category?> GetByIdAsync(int id)
         {
             return await _context.Categories
+                .AsNoTracking()
                 .Include(c => c.Products)
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
@@ -31,6 +33,7 @@ namespace TechStore.Infrastructure.Repositories
         public async Task<Category?> GetByNameAsync(string name)
         {
             return await _context.Categories
+                .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Name == name);
         }
 

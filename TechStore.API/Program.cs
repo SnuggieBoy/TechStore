@@ -64,14 +64,16 @@ builder.Services.AddSwaggerGen(c =>
     }
 });
 
-// CORS - Allow Flutter mobile app to connect
+// CORS - Use allowed origins from config in production; AllowAll for local dev
+var allowedOrigins = builder.Configuration.GetSection("CORS")["AllowedOrigins"]?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        if (allowedOrigins is { Length: > 0 })
+            policy.WithOrigins(allowedOrigins).AllowAnyMethod().AllowAnyHeader();
+        else
+            policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
     });
 });
 
@@ -92,9 +94,11 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IReportService, TechStore.Infrastructure.Services.ReportService>();
 builder.Services.AddScoped<IEmailService, TechStore.Infrastructure.Services.EmailService>();
 
-// JWT Authentication
+// JWT Authentication (prefer env var for secret in production)
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"];
+var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET") ?? jwtSettings["SecretKey"];
+if (string.IsNullOrWhiteSpace(secretKey))
+    throw new InvalidOperationException("JWT SecretKey is not set. Set JwtSettings:SecretKey in appsettings or JWT_SECRET env var.");
 
 builder.Services.AddAuthentication(options =>
 {
