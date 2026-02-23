@@ -49,6 +49,19 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+
+    // Set the comments path for the Swagger JSON and UI.
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    c.IncludeXmlComments(xmlPath);
+
+    // Also include Application layer XML for DTO descriptions
+    var appXmlFile = "TechStore.Application.xml";
+    var appXmlPath = Path.Combine(AppContext.BaseDirectory, appXmlFile);
+    if (File.Exists(appXmlPath))
+    {
+        c.IncludeXmlComments(appXmlPath);
+    }
 });
 
 // CORS - Allow Flutter mobile app to connect
