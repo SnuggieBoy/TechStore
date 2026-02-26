@@ -5,6 +5,8 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json;
 using TechStore.API.Middlewares;
+using TechStore.API.Models;
+using TechStore.API.Services;
 using TechStore.Application.Interfaces.Repositories;
 using TechStore.Application.Interfaces.Services;
 using TechStore.Application.Services;
@@ -93,6 +95,10 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IReportService, TechStore.Infrastructure.Services.ReportService>();
 builder.Services.AddScoped<IEmailService, TechStore.Infrastructure.Services.EmailService>();
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
+
+builder.Services.Configure<CloudinarySettings>(
+    builder.Configuration.GetSection("CloudinarySettings"));
 
 // JWT Authentication (prefer env var for secret in production)
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");

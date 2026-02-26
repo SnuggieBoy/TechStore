@@ -53,6 +53,7 @@ API cần **connection string** trỏ tới DB ở bước 1 và **JWT secret** 
    - `ConnectionStrings__DefaultConnection` = chuỗi kết nối DB (bước 1).
    - `JwtSettings__SecretKey` = chuỗi bí mật dài (vd: 32+ ký tự ngẫu nhiên).
    - `JwtSettings__Issuer` = `TechStoreAPI`, `JwtSettings__Audience` = `TechStoreClient`.
+   - `CloudinarySettings__CloudName`, `CloudinarySettings__ApiKey`, `CloudinarySettings__ApiSecret` (cho upload ảnh, ví dụ: CloudName = `dw0dk3okb`).
    - `CORS__AllowedOrigins` = danh sách origin cách nhau dấu phẩy (vd: `https://your-app.vercel.app,https://yourapp.com`). Để trống = cho phép mọi origin (chỉ nên dùng khi demo).
 5. **Save** và restart app. URL API: `https://<tên-app>.azurewebsites.net`.
 
@@ -81,6 +82,8 @@ API cần **connection string** trỏ tới DB ở bước 1 và **JWT secret** 
 - **JwtSettings:SecretKey**: Một chuỗi bí mật cố định (≥ 32 ký tự), **không** commit lên Git. Có thể dùng biến môi trường `JWT_SECRET` (code đã hỗ trợ).
 - **CORS:AllowedOrigins**: Danh sách origin frontend/app được gọi API (cách nhau dấu phẩy). Ví dụ: `https://myapp.vercel.app`.
 - **EmailSettings**: Nếu cần gửi mail thật, điền SmtpHost, SmtpUser, SmtpPassword (qua biến môi trường hoặc appsettings.Production.json, không commit mật khẩu).
+- **CloudinarySettings**: Để upload ảnh lên Cloudinary (API `/api/images/upload`):
+  - `CloudinarySettings__CloudName`, `CloudinarySettings__ApiKey`, `CloudinarySettings__ApiSecret` (trong Application settings Azure).
 
 ---
 
