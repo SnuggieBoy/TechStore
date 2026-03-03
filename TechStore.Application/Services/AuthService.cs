@@ -77,11 +77,11 @@ namespace TechStore.Application.Services
             return new UserDto
             {
                 Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-                FullName = user.FullName,
-                Role = user.Role,
-                Phone = user.Phone,
+                Username = user.Username?.Trim() ?? "",
+                Email = user.Email?.Trim() ?? "",
+                FullName = user.FullName?.Trim(),
+                Role = user.Role?.Trim() ?? "",
+                Phone = user.Phone?.Trim(),
                 Token = token
             };
         }
@@ -102,9 +102,9 @@ namespace TechStore.Application.Services
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role)
+                new Claim(ClaimTypes.Name, user.Username?.Trim() ?? ""),
+                new Claim(ClaimTypes.Email, user.Email?.Trim() ?? ""),
+                new Claim(ClaimTypes.Role, user.Role?.Trim() ?? "")
             };
 
             var token = new JwtSecurityToken(
