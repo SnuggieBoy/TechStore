@@ -46,7 +46,8 @@ namespace TechStore.Application.DTOs.Report
         public int Id { get; set; }
         public string Username { get; set; } = string.Empty;
         public decimal TotalAmount { get; set; }
-        public string Status { get; set; } = string.Empty;
+        public string PaymentStatus { get; set; } = string.Empty;
+        public string OrderStatus { get; set; } = string.Empty;
         public DateTime OrderDate { get; set; }
     }
 }

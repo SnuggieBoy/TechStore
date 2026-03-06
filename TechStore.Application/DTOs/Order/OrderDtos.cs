@@ -40,14 +40,25 @@ namespace TechStore.Application.DTOs.Order
     }
 
     /// <summary>
-    /// Update order status (Admin).
+    /// Update order/shipping status (Admin). Values: Pending, Shipping, Delivered.
     /// </summary>
     public class UpdateOrderStatusDto
     {
         [Required]
-        [RegularExpression("^(Pending|Confirmed|Shipped|Delivered|Cancelled)$",
-            ErrorMessage = "Status must be: Pending, Confirmed, Shipped, Delivered, or Cancelled")]
-        public string Status { get; set; } = string.Empty;
+        [RegularExpression("^(Pending|Shipping|Delivered)$",
+            ErrorMessage = "Order status must be: Pending, Shipping, or Delivered")]
+        public string OrderStatus { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Update payment status (Admin). Values: Unpaid, Paid, Cancelled.
+    /// </summary>
+    public class UpdatePaymentStatusDto
+    {
+        [Required]
+        [RegularExpression("^(Unpaid|Paid|Cancelled)$",
+            ErrorMessage = "Payment status must be: Unpaid, Paid, or Cancelled")]
+        public string PaymentStatus { get; set; } = string.Empty;
     }
 
     public class OrderDto
@@ -59,7 +70,8 @@ namespace TechStore.Application.DTOs.Order
         public string Username { get; set; } = string.Empty;
         public DateTime OrderDate { get; set; }
         public decimal TotalAmount { get; set; }
-        public string Status { get; set; } = string.Empty;
+        public string PaymentStatus { get; set; } = string.Empty;
+        public string OrderStatus { get; set; } = string.Empty;
         public string? PaymentMethod { get; set; }
         public string? ShippingAddress { get; set; }
         public List<OrderItemDto> Items { get; set; } = new();

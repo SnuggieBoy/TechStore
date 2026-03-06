@@ -122,8 +122,13 @@ namespace TechStore.Domain.Entities
         [Column(TypeName = "decimal(18, 2)")]
         public decimal TotalAmount { get; set; }
 
+        /// <summary>Unpaid | Paid | Cancelled</summary>
         [MaxLength(50)]
-        public string Status { get; set; } = "Pending";
+        public string PaymentStatus { get; set; } = "Unpaid";
+
+        /// <summary>Pending | Shipping | Delivered</summary>
+        [MaxLength(50)]
+        public string OrderStatus { get; set; } = "Pending";
 
         [MaxLength(50)]
         public string? PaymentMethod { get; set; }

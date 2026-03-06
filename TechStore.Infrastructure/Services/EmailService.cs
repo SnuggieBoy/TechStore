@@ -36,11 +36,24 @@ namespace TechStore.Infrastructure.Services
             _enableSsl = bool.TryParse(_configuration["EmailSettings:EnableSsl"], out var ssl) ? ssl : true;
         }
 
-        public async Task SendOrderConfirmationAsync(string toEmail, string customerName, int orderId, decimal totalAmount, string status, CancellationToken cancellationToken = default)
+        public async Task SendOrderConfirmationAsync(string toEmail, string customerName, int orderId, decimal totalAmount, string paymentStatus, string orderStatus, CancellationToken cancellationToken = default)
         {
             var subject = $"[TechStore] Xác nhận đơn hàng #{orderId}";
             var totalFormatted = totalAmount.ToString("N0");
-            var statusBadge = status == "Pending" ? "#f59e0b" : "#6b7280"; // amber for Pending
+            var paymentBadgeColor = paymentStatus switch
+            {
+                "Unpaid" => "#f59e0b",
+                "Paid" => "#10b981",
+                "Cancelled" => "#dc2626",
+                _ => "#6b7280"
+            };
+            var orderBadgeColor = orderStatus switch
+            {
+                "Pending" => "#f59e0b",
+                "Shipping" => "#7c3aed",
+                "Delivered" => "#059669",
+                _ => "#6b7280"
+            };
             var body = $@"
 <!DOCTYPE html>
 <html>
@@ -57,7 +70,8 @@ namespace TechStore.Infrastructure.Services
       <table style='width:100%;border-collapse:collapse;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden'>
         <tr style='background:#f8fafc'><td style='padding:14px 16px;font-size:13px;color:#64748b;width:140px'>Mã đơn hàng</td><td style='padding:14px 16px;font-size:14px;font-weight:600;color:#1e293b'>#{orderId}</td></tr>
         <tr><td style='padding:14px 16px;font-size:13px;color:#64748b'>Tổng tiền</td><td style='padding:14px 16px;font-size:16px;font-weight:700;color:#1e40af'>{totalFormatted} VNĐ</td></tr>
-        <tr style='background:#f8fafc'><td style='padding:14px 16px;font-size:13px;color:#64748b'>Trạng thái</td><td style='padding:14px 16px'><span style='display:inline-block;padding:6px 12px;border-radius:6px;font-size:13px;font-weight:600;background:{statusBadge};color:#fff'>{EscapeHtml(status)}</span></td></tr>
+        <tr style='background:#f8fafc'><td style='padding:14px 16px;font-size:13px;color:#64748b'>Thanh toán</td><td style='padding:14px 16px'><span style='display:inline-block;padding:6px 12px;border-radius:6px;font-size:13px;font-weight:600;background:{paymentBadgeColor};color:#fff'>{EscapeHtml(paymentStatus)}</span></td></tr>
+        <tr><td style='padding:14px 16px;font-size:13px;color:#64748b'>Giao hàng</td><td style='padding:14px 16px'><span style='display:inline-block;padding:6px 12px;border-radius:6px;font-size:13px;font-weight:600;background:{orderBadgeColor};color:#fff'>{EscapeHtml(orderStatus)}</span></td></tr>
       </table>
       <p style='margin:24px 0 0;font-size:14px;color:#64748b'>Bạn có thể thanh toán đơn hàng này trong app để chuyển trạng thái sang <strong>Paid</strong>.</p>
     </div>
@@ -136,24 +150,29 @@ namespace TechStore.Infrastructure.Services
             await SendEmailAsync(toEmail, subject, body, true, cancellationToken);
         }
 
-        public async Task SendOrderStatusUpdatedAsync(string toEmail, string customerName, int orderId, decimal totalAmount, string previousStatus, string newStatus, CancellationToken cancellationToken = default)
+        public async Task SendOrderStatusUpdatedAsync(string toEmail, string customerName, int orderId, decimal totalAmount, string statusType, string previousStatus, string newStatus, CancellationToken cancellationToken = default)
         {
             var subject = $"[TechStore] Cập nhật đơn hàng #{orderId} - {EscapeHtml(newStatus)}";
             var totalFormatted = totalAmount.ToString("N0");
-            // Badge color by new status (real-world: Confirmed=blue, Shipped=purple, Delivered=green)
+            // Badge color by new status
             var newBadgeColor = newStatus switch
             {
-                "Confirmed" => "#2563eb",
-                "Shipped" => "#7c3aed",
+                // Payment statuses
+                "Paid" => "#10b981",
+                "Unpaid" => "#f59e0b",
+                // Order/shipping statuses
+                "Pending" => "#f59e0b",
+                "Shipping" => "#7c3aed",
                 "Delivered" => "#059669",
                 _ => "#64748b"
             };
             var statusMessage = newStatus switch
             {
-                "Confirmed" => "Đơn hàng đã được xác nhận. Chúng tôi đang chuẩn bị và sẽ sớm giao đến bạn.",
-                "Shipped" => "Đơn hàng đang được giao. Bạn sẽ nhận hàng trong thời gian sớm nhất.",
+                "Paid" => "Đơn hàng đã được thanh toán thành công.",
+                "Pending" => "Đơn hàng đang chờ lấy hàng. Chúng tôi đang chuẩn bị.",
+                "Shipping" => "Đơn hàng đang được giao. Bạn sẽ nhận hàng trong thời gian sớm nhất.",
                 "Delivered" => "Đơn hàng đã giao thành công. Cảm ơn bạn đã mua sắm tại TechStore!",
-                _ => "Trạng thái đơn hàng của bạn đã được cập nhật."
+                _ => $"Trạng thái {statusType} của đơn hàng đã được cập nhật."
             };
             var body = $@"
 <!DOCTYPE html>
@@ -171,7 +190,8 @@ namespace TechStore.Infrastructure.Services
       <table style='width:100%;border-collapse:collapse;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden'>
         <tr style='background:#f8fafc'><td style='padding:14px 16px;font-size:13px;color:#64748b;width:140px'>Mã đơn hàng</td><td style='padding:14px 16px;font-size:14px;font-weight:600;color:#1e293b'>#{orderId}</td></tr>
         <tr><td style='padding:14px 16px;font-size:13px;color:#64748b'>Tổng tiền</td><td style='padding:14px 16px;font-size:16px;font-weight:700;color:#1e293b'>{totalFormatted} VNĐ</td></tr>
-        <tr style='background:#f8fafc'><td style='padding:14px 16px;font-size:13px;color:#64748b'>Trạng thái cũ</td><td style='padding:14px 16px'><span style='display:inline-block;padding:6px 12px;border-radius:6px;font-size:13px;font-weight:600;background:#94a3b8;color:#fff'>{EscapeHtml(previousStatus)}</span></td></tr>
+        <tr style='background:#f8fafc'><td style='padding:14px 16px;font-size:13px;color:#64748b'>Loại</td><td style='padding:14px 16px;font-size:14px;font-weight:600;color:#1e293b'>{EscapeHtml(statusType)}</td></tr>
+        <tr><td style='padding:14px 16px;font-size:13px;color:#64748b'>Trạng thái cũ</td><td style='padding:14px 16px'><span style='display:inline-block;padding:6px 12px;border-radius:6px;font-size:13px;font-weight:600;background:#94a3b8;color:#fff'>{EscapeHtml(previousStatus)}</span></td></tr>
         <tr><td style='padding:14px 16px;font-size:13px;color:#64748b'>Trạng thái mới</td><td style='padding:14px 16px'><span style='display:inline-block;padding:6px 12px;border-radius:6px;font-size:13px;font-weight:600;background:{newBadgeColor};color:#fff'>{EscapeHtml(newStatus)}</span></td></tr>
       </table>
       <p style='margin:24px 0 0;font-size:14px;color:#64748b'>Bạn có thể theo dõi đơn hàng trong app. Nếu cần hỗ trợ, vui lòng liên hệ chúng tôi.</p>

@@ -95,17 +95,40 @@ namespace TechStore.API.Controllers
         }
 
         /// <summary>
-        /// Update order status (Admin only). Validates status transitions.
+        /// Update order/shipping status (Admin only). Pending → Shipping → Delivered.
         /// </summary>
-        [HttpPut("{id}/status")]
+        [HttpPut("{id}/order-status")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(ApiResponse<OrderDto>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateOrderStatusDto dto)
+        public async Task<IActionResult> UpdateOrderStatus(string id, [FromBody] UpdateOrderStatusDto dto)
         {
             try
             {
-                var order = await _orderService.UpdateStatusAsync(id, dto);
-                return Ok(ApiResponse<OrderDto>.SuccessResponse(order, $"Order status updated to {dto.Status}"));
+                var order = await _orderService.UpdateOrderStatusAsync(id, dto);
+                return Ok(ApiResponse<OrderDto>.SuccessResponse(order, $"Order status updated to {dto.OrderStatus}"));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse<object>.ErrorResponse(ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<object>.ErrorResponse(ex.Message));
+            }
+        }
+
+        /// <summary>
+        /// Update payment status (Admin only). Unpaid → Paid | Cancelled, Paid → Cancelled.
+        /// </summary>
+        [HttpPut("{id}/payment-status")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(ApiResponse<OrderDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> UpdatePaymentStatus(string id, [FromBody] UpdatePaymentStatusDto dto)
+        {
+            try
+            {
+                var order = await _orderService.UpdatePaymentStatusAsync(id, dto);
+                return Ok(ApiResponse<OrderDto>.SuccessResponse(order, $"Payment status updated to {dto.PaymentStatus}"));
             }
             catch (KeyNotFoundException ex)
             {

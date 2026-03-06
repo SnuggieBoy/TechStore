@@ -82,7 +82,8 @@ namespace TechStore.Application.Services
                     UserId = userId,
                     OrderDate = DateTime.UtcNow,
                     TotalAmount = totalAmount,
-                    Status = "Pending",
+                    PaymentStatus = "Unpaid",
+                    OrderStatus = "Pending",
                     PaymentMethod = paymentMethod,
                     ShippingAddress = shippingAddress,
                     OrderItems = orderItems
@@ -105,7 +106,8 @@ namespace TechStore.Application.Services
                             created.User.FullName ?? created.User.Username ?? "Khách hàng",
                             created.Id,
                             created.TotalAmount,
-                            created.Status);
+                            created.PaymentStatus,
+                            created.OrderStatus);
                 }
                 catch
                 {
@@ -183,37 +185,31 @@ namespace TechStore.Application.Services
         }
 
         /// <summary>
-        /// Admin update status with validated transitions.
+        /// Admin: update order/shipping status (Pending → Shipping → Delivered).
         /// </summary>
-        public async Task<OrderDto> UpdateStatusAsync(string orderPublicId, UpdateOrderStatusDto dto)
+        public async Task<OrderDto> UpdateOrderStatusAsync(string orderPublicId, UpdateOrderStatusDto dto)
         {
             var guid = ParseOrderPublicId(orderPublicId);
             var order = await _orderRepository.GetByPublicIdAsync(guid)
                 ?? throw new KeyNotFoundException("Order not found");
 
-            ValidateStatusTransition(order.Status, dto.Status);
+            // Cannot update shipping status if payment is cancelled
+            if (order.PaymentStatus == "Cancelled")
+                throw new InvalidOperationException("Cannot update order status: payment has been cancelled.");
 
-            var previousStatus = order.Status;
+            ValidateOrderStatusTransition(order.OrderStatus, dto.OrderStatus);
 
-            // If cancelling, restore stock
-            if (dto.Status == "Cancelled")
-            {
-                await RestoreStock(order);
-            }
-
-            order.Status = dto.Status;
+            var previousStatus = order.OrderStatus;
+            order.OrderStatus = dto.OrderStatus;
             _orderRepository.Update(order);
             await _orderRepository.SaveChangesAsync();
 
-            // Notify customer by email (real-world: admin status update → always inform customer)
+            // Notify customer by email
             try
             {
                 if (string.IsNullOrWhiteSpace(order.User?.Email)) return MapToDto(order);
                 var customerName = order.User.FullName ?? order.User.Username ?? "Khách hàng";
-                if (dto.Status == "Cancelled")
-                    await _emailService.SendOrderCancelledAsync(order.User.Email, customerName, order.Id, order.TotalAmount);
-                else
-                    await _emailService.SendOrderStatusUpdatedAsync(order.User.Email, customerName, order.Id, order.TotalAmount, previousStatus, dto.Status);
+                await _emailService.SendOrderStatusUpdatedAsync(order.User.Email, customerName, order.Id, order.TotalAmount, "Giao hàng", previousStatus, dto.OrderStatus);
             }
             catch
             {
@@ -224,7 +220,48 @@ namespace TechStore.Application.Services
         }
 
         /// <summary>
-        /// FIX #6: Customer can cancel their own Pending orders only.
+        /// Admin: update payment status (Unpaid → Paid | Cancelled, Paid → Cancelled).
+        /// </summary>
+        public async Task<OrderDto> UpdatePaymentStatusAsync(string orderPublicId, UpdatePaymentStatusDto dto)
+        {
+            var guid = ParseOrderPublicId(orderPublicId);
+            var order = await _orderRepository.GetByPublicIdAsync(guid)
+                ?? throw new KeyNotFoundException("Order not found");
+
+            ValidatePaymentStatusTransition(order.PaymentStatus, dto.PaymentStatus);
+
+            var previousStatus = order.PaymentStatus;
+
+            // If cancelling payment, restore stock
+            if (dto.PaymentStatus == "Cancelled")
+            {
+                await RestoreStock(order);
+            }
+
+            order.PaymentStatus = dto.PaymentStatus;
+            _orderRepository.Update(order);
+            await _orderRepository.SaveChangesAsync();
+
+            // Notify customer by email
+            try
+            {
+                if (string.IsNullOrWhiteSpace(order.User?.Email)) return MapToDto(order);
+                var customerName = order.User.FullName ?? order.User.Username ?? "Khách hàng";
+                if (dto.PaymentStatus == "Cancelled")
+                    await _emailService.SendOrderCancelledAsync(order.User.Email, customerName, order.Id, order.TotalAmount);
+                else
+                    await _emailService.SendOrderStatusUpdatedAsync(order.User.Email, customerName, order.Id, order.TotalAmount, "Thanh toán", previousStatus, dto.PaymentStatus);
+            }
+            catch
+            {
+                // Email failure is non-fatal
+            }
+
+            return MapToDto(order);
+        }
+
+        /// <summary>
+        /// Customer can cancel their own Unpaid + Pending orders only.
         /// </summary>
         public async Task<OrderDto> CancelMyOrderAsync(int userId, string orderPublicId)
         {
@@ -235,14 +272,18 @@ namespace TechStore.Application.Services
             if (order.UserId != userId)
                 throw new UnauthorizedAccessException("You can only cancel your own orders");
 
-            if (order.Status != "Pending")
+            if (order.PaymentStatus != "Unpaid")
                 throw new InvalidOperationException(
-                    $"Cannot cancel order in '{order.Status}' status. Only 'Pending' orders can be cancelled by customers.");
+                    $"Cannot cancel order with payment status '{order.PaymentStatus}'. Only 'Unpaid' orders can be cancelled by customers.");
+
+            if (order.OrderStatus != "Pending")
+                throw new InvalidOperationException(
+                    $"Cannot cancel order with shipping status '{order.OrderStatus}'. Only 'Pending' orders can be cancelled.");
 
             // Restore stock
             await RestoreStock(order);
 
-            order.Status = "Cancelled";
+            order.PaymentStatus = "Cancelled";
             _orderRepository.Update(order);
             await _orderRepository.SaveChangesAsync();
 
@@ -265,7 +306,7 @@ namespace TechStore.Application.Services
         }
 
         /// <summary>
-        /// Mock payment: simulate ~2s processing delay, then set order status from Pending to Paid.
+        /// Mock payment: simulate ~2s processing delay, then set PaymentStatus from Unpaid to Paid.
         /// </summary>
         public async Task<OrderDto> PayOrderAsync(int userId, string orderPublicId)
         {
@@ -276,14 +317,14 @@ namespace TechStore.Application.Services
             if (order.UserId != userId)
                 throw new UnauthorizedAccessException("You can only pay for your own orders");
 
-            if (order.Status != "Pending")
+            if (order.PaymentStatus != "Unpaid")
                 throw new InvalidOperationException(
-                    $"Order cannot be paid. Current status: '{order.Status}'. Only 'Pending' orders can be paid.");
+                    $"Order cannot be paid. Current payment status: '{order.PaymentStatus}'. Only 'Unpaid' orders can be paid.");
 
             // Simulate payment processing delay (~2 seconds)
             await Task.Delay(2000);
 
-            order.Status = "Paid";
+            order.PaymentStatus = "Paid";
             _orderRepository.Update(order);
             await _orderRepository.SaveChangesAsync();
 
@@ -307,14 +348,12 @@ namespace TechStore.Application.Services
 
         #region Private Helpers
 
-        private void ValidateStatusTransition(string currentStatus, string newStatus)
+        private void ValidatePaymentStatusTransition(string currentStatus, string newStatus)
         {
             var validTransitions = new Dictionary<string, string[]>
             {
-                { "Pending", new[] { "Confirmed", "Cancelled" } },
-                { "Confirmed", new[] { "Shipped", "Cancelled" } },
-                { "Shipped", new[] { "Delivered" } },
-                { "Delivered", Array.Empty<string>() },
+                { "Unpaid", new[] { "Paid", "Cancelled" } },
+                { "Paid", new[] { "Cancelled" } },       // refund scenario
                 { "Cancelled", Array.Empty<string>() }
             };
 
@@ -322,7 +361,24 @@ namespace TechStore.Application.Services
             {
                 if (!allowed.Contains(newStatus))
                     throw new InvalidOperationException(
-                        $"Cannot change status from '{currentStatus}' to '{newStatus}'. Allowed: {string.Join(", ", allowed)}");
+                        $"Cannot change payment status from '{currentStatus}' to '{newStatus}'. Allowed: {string.Join(", ", allowed)}");
+            }
+        }
+
+        private void ValidateOrderStatusTransition(string currentStatus, string newStatus)
+        {
+            var validTransitions = new Dictionary<string, string[]>
+            {
+                { "Pending", new[] { "Shipping" } },
+                { "Shipping", new[] { "Delivered" } },
+                { "Delivered", Array.Empty<string>() }
+            };
+
+            if (validTransitions.TryGetValue(currentStatus, out var allowed))
+            {
+                if (!allowed.Contains(newStatus))
+                    throw new InvalidOperationException(
+                        $"Cannot change order status from '{currentStatus}' to '{newStatus}'. Allowed: {string.Join(", ", allowed)}");
             }
         }
 
@@ -367,7 +423,8 @@ namespace TechStore.Application.Services
                 Username = o.User?.Username ?? string.Empty,
                 OrderDate = o.OrderDate,
                 TotalAmount = o.TotalAmount,
-                Status = o.Status,
+                PaymentStatus = o.PaymentStatus,
+                OrderStatus = o.OrderStatus,
                 PaymentMethod = o.PaymentMethod,
                 ShippingAddress = o.ShippingAddress,
                 Items = o.OrderItems?.Select(oi => new OrderItemDto

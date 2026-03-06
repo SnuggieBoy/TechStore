@@ -8,7 +8,7 @@ namespace TechStore.Application.Interfaces.Services
         /// <summary>
         /// Send order confirmation email to the customer after order is placed successfully.
         /// </summary>
-        Task SendOrderConfirmationAsync(string toEmail, string customerName, int orderId, decimal totalAmount, string status, CancellationToken cancellationToken = default);
+        Task SendOrderConfirmationAsync(string toEmail, string customerName, int orderId, decimal totalAmount, string paymentStatus, string orderStatus, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Send payment success email when order is paid (POST /api/orders/pay).
@@ -21,9 +21,9 @@ namespace TechStore.Application.Interfaces.Services
         Task SendOrderCancelledAsync(string toEmail, string customerName, int orderId, decimal totalAmount, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Send order status updated email when admin updates order status (e.g. Confirmed, Shipped, Delivered).
+        /// Send order status updated email when admin updates any status (order or payment).
         /// Not used when new status is Cancelled (use SendOrderCancelledAsync for that).
         /// </summary>
-        Task SendOrderStatusUpdatedAsync(string toEmail, string customerName, int orderId, decimal totalAmount, string previousStatus, string newStatus, CancellationToken cancellationToken = default);
+        Task SendOrderStatusUpdatedAsync(string toEmail, string customerName, int orderId, decimal totalAmount, string statusType, string previousStatus, string newStatus, CancellationToken cancellationToken = default);
     }
 }

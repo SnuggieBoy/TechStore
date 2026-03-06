@@ -21,7 +21,7 @@ namespace TechStore.Infrastructure.Services
                 .Include(o => o.OrderItems)
                 .ToListAsync();
 
-            var completedOrders = orders.Where(o => o.Status == "Delivered").ToList();
+            var completedOrders = orders.Where(o => o.OrderStatus == "Delivered").ToList();
 
             var monthlyRevenue = completedOrders
                 .GroupBy(o => new { o.OrderDate.Year, o.OrderDate.Month })
@@ -41,9 +41,9 @@ namespace TechStore.Infrastructure.Services
                 TotalRevenue = completedOrders.Sum(o => o.TotalAmount),
                 TotalOrders = orders.Count,
                 TotalProductsSold = completedOrders.SelectMany(o => o.OrderItems).Sum(oi => oi.Quantity),
-                PendingOrders = orders.Count(o => o.Status == "Pending" || o.Status == "Confirmed" || o.Status == "Shipped"),
+                PendingOrders = orders.Count(o => (o.OrderStatus == "Pending" || o.OrderStatus == "Shipping") && o.PaymentStatus != "Cancelled"),
                 CompletedOrders = completedOrders.Count,
-                CancelledOrders = orders.Count(o => o.Status == "Cancelled"),
+                CancelledOrders = orders.Count(o => o.PaymentStatus == "Cancelled"),
                 MonthlyRevenue = monthlyRevenue
             };
         }
@@ -55,7 +55,7 @@ namespace TechStore.Infrastructure.Services
                 .Include(oi => oi.Product)
                     .ThenInclude(p => p.Category)
                 .Include(oi => oi.Order)
-                .Where(oi => oi.Order.Status != "Cancelled")
+                .Where(oi => oi.Order.PaymentStatus != "Cancelled")
                 .ToListAsync();
 
             return orderItems
@@ -83,7 +83,7 @@ namespace TechStore.Infrastructure.Services
             var totalOrders = await _context.Orders.AsNoTracking().CountAsync();
             var totalRevenue = await _context.Orders
                 .AsNoTracking()
-                .Where(o => o.Status == "Delivered")
+                .Where(o => o.OrderStatus == "Delivered")
                 .SumAsync(o => o.TotalAmount);
 
             var topProducts = await GetBestSellingProductsAsync(5);
@@ -98,7 +98,8 @@ namespace TechStore.Infrastructure.Services
                     Id = o.Id,
                     Username = o.User.Username,
                     TotalAmount = o.TotalAmount,
-                    Status = o.Status,
+                    PaymentStatus = o.PaymentStatus,
+                    OrderStatus = o.OrderStatus,
                     OrderDate = o.OrderDate
                 })
                 .ToListAsync();
