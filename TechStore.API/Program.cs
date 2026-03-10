@@ -96,6 +96,7 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IUserService, TechStore.Application.Services.UserService>();
 builder.Services.AddScoped<IReportService, TechStore.Infrastructure.Services.ReportService>();
 builder.Services.AddScoped<IEmailService, TechStore.Infrastructure.Services.EmailService>();
+builder.Services.AddScoped<IVnPayService, TechStore.Infrastructure.Services.VnPayService>();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 
 builder.Services.Configure<CloudinarySettings>(

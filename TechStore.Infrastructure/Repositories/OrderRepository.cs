@@ -28,7 +28,7 @@ namespace TechStore.Infrastructure.Repositories
 
         public async Task<List<Order>> GetByUserIdAsync(int userId)
         {
-            return await _context.Orders
+                return await _context.Orders
                 .AsNoTracking()
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)

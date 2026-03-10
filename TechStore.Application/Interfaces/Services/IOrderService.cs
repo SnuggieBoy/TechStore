@@ -16,5 +16,8 @@ namespace TechStore.Application.Interfaces.Services
         Task<OrderDto> CancelMyOrderAsync(int userId, string orderPublicId);
         /// <summary>Mock payment: simulate ~2s delay then set PaymentStatus from Unpaid to Paid.</summary>
         Task<OrderDto> PayOrderAsync(int userId, string orderPublicId);
+
+        /// <summary>Confirm VNPay payment after IPN/callback verification.</summary>
+        Task ConfirmVnPayPaymentAsync(int orderId);
     }
 }

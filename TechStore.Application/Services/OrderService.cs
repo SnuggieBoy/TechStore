@@ -346,6 +346,38 @@ namespace TechStore.Application.Services
             return MapToDto(order);
         }
 
+        /// <summary>
+        /// Confirm VNPay payment after IPN/callback signature verification.
+        /// </summary>
+        public async Task ConfirmVnPayPaymentAsync(int orderId)
+        {
+            var order = await _orderRepository.GetByIdAsync(orderId)
+                ?? throw new KeyNotFoundException("Order not found");
+
+            if (order.PaymentStatus != "Unpaid")
+                return; // Already paid or cancelled — idempotent
+
+            order.PaymentStatus = "Paid";
+            order.PaymentMethod = "VNPay";
+            _orderRepository.Update(order);
+            await _orderRepository.SaveChangesAsync();
+
+            // Send payment success email
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(order.User?.Email))
+                    await _emailService.SendPaymentSuccessAsync(
+                        order.User.Email,
+                        order.User.FullName ?? order.User.Username ?? "Khách hàng",
+                        order.Id,
+                        order.TotalAmount);
+            }
+            catch
+            {
+                // Email failure is non-fatal
+            }
+        }
+
         #region Private Helpers
 
         private void ValidatePaymentStatusTransition(string currentStatus, string newStatus)
