@@ -12,6 +12,7 @@ using TechStore.Application.Interfaces.Services;
 using TechStore.Application.Services;
 using TechStore.Infrastructure.Persistence;
 using TechStore.Infrastructure.Repositories;
+using TechStore.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -98,6 +99,9 @@ builder.Services.AddScoped<IReportService, TechStore.Infrastructure.Services.Rep
 builder.Services.AddScoped<IEmailService, TechStore.Infrastructure.Services.EmailService>();
 builder.Services.AddScoped<IVnPayService, TechStore.Infrastructure.Services.VnPayService>();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
+builder.Services.AddScoped<IOpenAIService, OpenAIService>();
+builder.Services.AddScoped<IAIChatService, AIChatService>();
+
 
 builder.Services.Configure<CloudinarySettings>(
     builder.Configuration.GetSection("CloudinarySettings"));
@@ -141,6 +145,12 @@ var app = builder.Build();
 
 // Global Exception Handling Middleware (must be first)
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+// Configure Forwarded Headers for Azure/Reverse Proxy
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+});
 
 // --- SỬA ĐOẠN NÀY ---
 // Cho phép chạy Swagger ở cả môi trường Production (Azure)

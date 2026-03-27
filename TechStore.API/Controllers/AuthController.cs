@@ -63,7 +63,8 @@ namespace TechStore.API.Controllers
         public IActionResult GoogleLogin()
         {
             // Trình duyệt sẽ mở link này, sau đó .NET sẽ dẫn sang Google
-            var properties = new AuthenticationProperties { RedirectUri = Url.Action("GoogleCallback") };
+            // Đảm bảo RedirectUri khớp chính xác với những gì đã đăng ký ở Google Console (thường là lowercase)
+            var properties = new AuthenticationProperties { RedirectUri = "/api/auth/google-callback" };
             return Challenge(properties, Microsoft.AspNetCore.Authentication.Google.GoogleDefaults.AuthenticationScheme);
         }
 
