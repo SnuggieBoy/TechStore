@@ -62,6 +62,7 @@ namespace TechStore.Application.Services
             await _userRepository.SaveChangesAsync();
 
             // Gửi email OTP ngay sau khi đăng ký
+            Console.WriteLine($"🔑 DEBUG_OTP: Mã OTP cho {user.Email} là: {otpCode}");
             await _emailService.SendOtpEmailAsync(user.Email, otpCode);
 
             // Không cần generate token ở bước này vì user chưa verify
@@ -109,6 +110,45 @@ namespace TechStore.Application.Services
             return MapToDto(user, token);
         }
 
+        public async Task<UserDto> ProcessExternalLoginAsync(string email, string name, string googleId)
+        {
+            var user = await _userRepository.GetByEmailAsync(email);
+
+            if (user == null)
+            {
+                // Create new user for first-time Google login
+                user = new User
+                {
+                    Username = email.Split('@')[0] + "_" + Guid.NewGuid().ToString().Substring(0, 5),
+                    Email = email,
+                    FullName = name,
+                    Role = "Customer",
+                    IsEmailConfirmed = true, // Google emails are already verified
+                    GoogleId = googleId,
+                    Provider = "Google",
+                    PasswordHash = Guid.NewGuid().ToString() // Dummy password
+                };
+
+                await _userRepository.AddAsync(user);
+            }
+            else
+            {
+                // Update existing user with Google info if missing
+                if (string.IsNullOrEmpty(user.GoogleId))
+                {
+                    user.GoogleId = googleId;
+                    user.Provider = "Google";
+                    user.IsEmailConfirmed = true;
+                    await _userRepository.UpdateAsync(user);
+                }
+            }
+
+            await _userRepository.SaveChangesAsync();
+
+            var token = GenerateJwtToken(user);
+            return MapToDto(user, token);
+        }
+
         private UserDto MapToDto(User user, string token)
         {
             return new UserDto
@@ -127,11 +167,11 @@ namespace TechStore.Application.Services
         private string GenerateJwtToken(User user)
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
-            var secretKey = jwtSettings["SecretKey"];
+            var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET") ?? jwtSettings["SecretKey"];
 
             if (string.IsNullOrEmpty(secretKey))
             {
-                throw new InvalidOperationException("JwtSettings:SecretKey is not configured.");
+                throw new InvalidOperationException("JWT SecretKey is not set. Set JwtSettings:SecretKey in appsettings or JWT_SECRET env var.");
             }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));

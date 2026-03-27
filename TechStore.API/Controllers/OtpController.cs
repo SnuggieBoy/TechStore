@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using TechStore.Application.Interfaces.Services;
 using TechStore.Infrastructure.Persistence;
 using TechStore.Domain.Entities;
+using TechStore.Application.DTOs.Auth;
+using TechStore.Application.DTOs.Common;
 using System;
 using System.Threading.Tasks;
 
@@ -23,14 +25,21 @@ namespace TechStore.API.Controllers
             _authService = authService;
         }
 
+        /// <summary>
+        /// Send OTP to user.
+        /// </summary>
         [HttpPost("send")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> SendOtp([FromBody] OtpRequest request)
         {
             // Tìm user bằng Email hoặc Username
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email || u.Username == request.Email);
+            string requestEmail = request.Email.Trim().ToLower();
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == requestEmail || u.Username == requestEmail);
             if (user == null)
             {
-                return NotFound(new { message = "Email hoặc Tên đăng nhập không tồn tại." });
+                return NotFound(ApiResponse<object>.ErrorResponse("Email hoặc Tên đăng nhập không tồn tại."));
             }
 
             // Dùng email thật của user để gửi
@@ -46,37 +55,37 @@ namespace TechStore.API.Controllers
 
             try 
             {
+                Console.WriteLine($"🔑 DEBUG_OTP (Resend): Mã OTP cho {targetEmail} là: {otpCode}");
                 await _emailService.SendOtpEmailAsync(targetEmail, otpCode);
-                return Ok(new { 
-                    message = "Mã OTP đã được gửi đến email của bạn.",
-                    email = targetEmail // Trả về email thật để UI hiển thị nếu muốn
-                });
+                return Ok(ApiResponse<object>.SuccessResponse(new { email = targetEmail }, "Mã OTP đã được gửi đến email của bạn."));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi gửi email: " + ex.Message });
+                return StatusCode(500, ApiResponse<object>.ErrorResponse("Lỗi khi gửi email: " + ex.Message));
             }
         }
 
+        /// <summary>
+        /// Verify OTP.
+        /// </summary>
         [HttpPost("verify")]
+        [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest request)
         {
             try
             {
                 var result = await _authService.VerifyOtpAsync(request.Email, request.Code);
-                return Ok(new { 
-                    message = "Xác thực OTP thành công. Tài khoản của bạn đã được kích hoạt.",
-                    data = result,
-                    token = result.Token
-                });
+                return Ok(ApiResponse<UserDto>.SuccessResponse(result, "Xác thực OTP thành công. Tài khoản của bạn đã được kích hoạt."));
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse<object>.ErrorResponse(ex.Message));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi hệ thống: " + ex.Message });
+                return StatusCode(500, ApiResponse<object>.ErrorResponse("Lỗi hệ thống: " + ex.Message));
             }
         }
     }

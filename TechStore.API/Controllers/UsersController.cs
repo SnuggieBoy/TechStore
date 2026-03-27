@@ -10,7 +10,7 @@ namespace TechStore.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)]
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -20,8 +20,25 @@ namespace TechStore.API.Controllers
             _userService = userService;
         }
 
-        private int GetUserId() =>
-            int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        private int GetUserId()
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            Console.WriteLine($"[Backend] Claim NameIdentifier: '{userIdStr}'");
+            
+            // Nếu không thấy NameIdentifier, thử tìm "sub" (tên gốc của JWT)
+            if (string.IsNullOrEmpty(userIdStr))
+            {
+                userIdStr = User.FindFirstValue("sub");
+                Console.WriteLine($"[Backend] Claim 'sub': '{userIdStr}'");
+            }
+
+            if (string.IsNullOrEmpty(userIdStr))
+            {
+                throw new UnauthorizedAccessException("Không tìm thấy User ID trong Token.");
+            }
+
+            return int.Parse(userIdStr);
+        }
 
         // ======================== CUSTOMER ENDPOINTS ========================
 

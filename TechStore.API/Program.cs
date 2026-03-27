@@ -112,6 +112,16 @@ builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultSignInScheme = Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme;
+})
+.AddCookie(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
+.AddGoogle(options =>
+{
+    options.SignInScheme = Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme;
+    var googleSettings = builder.Configuration.GetSection("Google");
+    options.ClientId = googleSettings["ClientId"] ?? "";
+    options.ClientSecret = googleSettings["ClientSecret"] ?? "";
+    options.CallbackPath = "/api/auth/signin-google";
 })
 .AddJwtBearer(options =>
 {

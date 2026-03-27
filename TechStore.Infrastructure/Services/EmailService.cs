@@ -24,18 +24,31 @@ namespace TechStore.Infrastructure.Services
             email.Subject = subject;
             email.Body = new TextPart(MimeKit.Text.TextFormat.Html) { Text = body };
 
-            using var smtp = new SmtpClient();
-            await smtp.ConnectAsync(
-                _configuration["EmailSettings:SmtpHost"],
-                int.Parse(_configuration["EmailSettings:SmtpPort"]),
-                MailKit.Security.SecureSocketOptions.StartTls
-            );
-            await smtp.AuthenticateAsync(
-                _configuration["EmailSettings:SmtpUser"],
-                _configuration["EmailSettings:SmtpPassword"]
-            );
-            await smtp.SendAsync(email);
-            await smtp.DisconnectAsync(true);
+            try
+            {
+                using var smtp = new SmtpClient();
+                await smtp.ConnectAsync(
+                    _configuration["EmailSettings:SmtpHost"],
+                    int.Parse(_configuration["EmailSettings:SmtpPort"]),
+                    MailKit.Security.SecureSocketOptions.StartTls
+                );
+                await smtp.AuthenticateAsync(
+                    _configuration["EmailSettings:SmtpUser"],
+                    _configuration["EmailSettings:SmtpPassword"]
+                );
+                await smtp.SendAsync(email);
+                await smtp.DisconnectAsync(true);
+            }
+            catch (Exception ex)
+            {
+                // Log detailed error to console to help the user
+                Console.WriteLine($"❌ EMAIL_ERROR: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"❌ INNER_ERROR: {ex.InnerException.Message}");
+                }
+                throw; // Rethrow to let the middleware handle it
+            }
         }
 
         public async Task SendOtpEmailAsync(string to, string otpCode)

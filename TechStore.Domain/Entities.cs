@@ -46,6 +46,12 @@ namespace TechStore.Domain.Entities
         public DateTime? OtpExpiry { get; set; }
         
         public bool IsEmailConfirmed { get; set; } = false;
+        
+        [MaxLength(100)]
+        public string? GoogleId { get; set; }
+        
+        [MaxLength(50)]
+        public string? Provider { get; set; } // e.g., "Google"
 
         public ICollection<Order> Orders { get; set; } = new List<Order>();
     }
