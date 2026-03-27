@@ -17,11 +17,13 @@ namespace TechStore.Application.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;
+        private readonly IEmailService _emailService;
 
-        public AuthService(IUserRepository userRepository, IConfiguration configuration)
+        public AuthService(IUserRepository userRepository, IConfiguration configuration, IEmailService emailService)
         {
             _userRepository = userRepository;
             _configuration = configuration;
+            _emailService = emailService;
         }
 
         public async Task<UserDto> RegisterAsync(RegisterDto request)
@@ -39,6 +41,9 @@ namespace TechStore.Application.Services
 
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
+            // Generate 6-digit OTP
+            string otpCode = new Random().Next(100000, 999999).ToString();
+
             var user = new User
             {
                 Username = request.Username.Trim(),
@@ -47,14 +52,46 @@ namespace TechStore.Application.Services
                 FullName = request.FullName,
                 Phone = request.Phone,
                 Role = "Customer",
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                OtpCode = otpCode,
+                OtpExpiry = DateTime.UtcNow.AddMinutes(5),
+                IsEmailConfirmed = false
             };
 
             await _userRepository.AddAsync(user);
             await _userRepository.SaveChangesAsync();
 
-            var token = GenerateJwtToken(user);
+            // Gửi email OTP ngay sau khi đăng ký
+            await _emailService.SendOtpEmailAsync(user.Email, otpCode);
 
+            // Không cần generate token ở bước này vì user chưa verify
+            return MapToDto(user, string.Empty);
+        }
+
+        public async Task<UserDto> VerifyOtpAsync(string emailOrUsername, string code)
+        {
+            var user = await _userRepository.GetByEmailAsync(emailOrUsername) 
+                       ?? await _userRepository.GetByUsernameAsync(emailOrUsername);
+                       
+            if (user == null || user.OtpCode != code)
+            {
+                throw new ArgumentException("Mã OTP không chính xác.");
+            }
+
+            if (user.OtpExpiry < DateTime.UtcNow)
+            {
+                throw new ArgumentException("Mã OTP đã hết hạn.");
+            }
+
+            // Success: Activate user and clear OTP
+            user.IsEmailConfirmed = true;
+            user.OtpCode = null;
+            user.OtpExpiry = null;
+            
+            await _userRepository.UpdateAsync(user);
+            await _userRepository.SaveChangesAsync();
+
+            var token = GenerateJwtToken(user);
             return MapToDto(user, token);
         }
 
@@ -82,7 +119,8 @@ namespace TechStore.Application.Services
                 FullName = user.FullName?.Trim(),
                 Role = user.Role?.Trim() ?? "",
                 Phone = user.Phone?.Trim(),
-                Token = token
+                Token = token,
+                IsEmailConfirmed = user.IsEmailConfirmed
             };
         }
 

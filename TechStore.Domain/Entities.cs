@@ -40,6 +40,13 @@ namespace TechStore.Domain.Entities
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        [MaxLength(6)]
+        public string? OtpCode { get; set; }
+
+        public DateTime? OtpExpiry { get; set; }
+        
+        public bool IsEmailConfirmed { get; set; } = false;
+
         public ICollection<Order> Orders { get; set; } = new List<Order>();
     }
 

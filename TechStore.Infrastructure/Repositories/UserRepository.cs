@@ -58,6 +58,13 @@ namespace TechStore.Infrastructure.Repositories
             _context.Users.Update(user);
         }
 
+        public async Task UpdateAsync(User user)
+        {
+            _context.Users.Update(user);
+            await Task.CompletedTask;
+        }
+
+
         public void Delete(User user)
         {
             _context.Users.Remove(user);

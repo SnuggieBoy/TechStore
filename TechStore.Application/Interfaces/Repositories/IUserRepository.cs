@@ -12,6 +12,8 @@ namespace TechStore.Application.Interfaces.Repositories
         Task<User?> GetByEmailAsync(string email);
         Task AddAsync(User user);
         void Update(User user);
+        Task UpdateAsync(User user);
+
         void Delete(User user);
         Task<bool> HasOrdersAsync(int userId);
         Task SaveChangesAsync();

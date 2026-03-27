@@ -7,5 +7,6 @@ namespace TechStore.Application.Interfaces.Services
     {
         Task<UserDto> RegisterAsync(RegisterDto request);
         Task<UserDto> LoginAsync(LoginDto request);
+        Task<UserDto> VerifyOtpAsync(string emailOrUsername, string code);
     }
 }
