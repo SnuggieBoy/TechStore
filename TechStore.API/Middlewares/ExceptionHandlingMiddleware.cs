@@ -65,12 +65,13 @@ namespace TechStore.API.Middlewares
                 ? new[] { "An unexpected error occurred. Please try again later." }
                 : new[] { statusCode >= 500 ? exception.Message : clientMessage };
 
+            // Dòng này được thay đổi tạm thời để hiển thị lỗi chi tiết khi deploy
             var response = new
             {
                 success = false,
-                message = statusCode >= 500 ? message : clientMessage,
+                message = message,
                 data = (object?)null,
-                errors = errorDetails
+                errors = new[] { exception.Message }
             };
 
             var json = JsonSerializer.Serialize(response, new JsonSerializerOptions

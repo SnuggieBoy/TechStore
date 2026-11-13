@@ -53,7 +53,7 @@ API cần **connection string** trỏ tới DB ở bước 1 và **JWT secret** 
    - `ConnectionStrings__DefaultConnection` = chuỗi kết nối DB (bước 1).
    - `JwtSettings__SecretKey` = chuỗi bí mật dài (vd: 32+ ký tự ngẫu nhiên).
    - `JwtSettings__Issuer` = `TechStoreAPI`, `JwtSettings__Audience` = `TechStoreClient`.
-   - `CloudinarySettings__CloudName`, `CloudinarySettings__ApiKey`, `CloudinarySettings__ApiSecret` (cho upload ảnh, ví dụ: CloudName = `dw0dk3okb`).
+   - `CloudinarySettings__CloudName`, `CloudinarySettings__ApiKey`, `CloudinarySettings__ApiSecret` (cho upload ảnh).
    - `CORS__AllowedOrigins` = danh sách origin cách nhau dấu phẩy (vd: `https://your-app.vercel.app,https://yourapp.com`). Để trống = cho phép mọi origin (chỉ nên dùng khi demo).
 5. **Save** và restart app. URL API: `https://<tên-app>.azurewebsites.net`.
 
@@ -133,12 +133,12 @@ Bạn đang có database **TechStore** trên SQL Server local (có bảng, có d
    - **Script DROP and CREATE** → chọn **Script CREATE** (hoặc tùy bạn).
 5. **Save to file** → chọn đường dẫn (vd: `TechStore_Export.sql`), **Next** → **Finish**.
 6. Mở **SSMS**, kết nối tới **Azure SQL**:
-   - Server: `techstore-prm393.database.windows.net`
-   - Authentication: **SQL Server Authentication**, Login: `prm393`, Password: `Passmon393`
+   - Server: `YOUR_SQL_SERVER.database.windows.net`
+   - Authentication: **SQL Server Authentication**, Login: `YOUR_DB_USER`, Password: `YOUR_DB_PASSWORD`
    - Chọn database **TechStoreDB** (hoặc master rồi chọn TechStoreDB).
 7. Trong script vừa export, **đổi tên database** nếu cần: tìm `USE [TechStore]` và đổi thành `USE [TechStoreDB]` (hoặc đảm bảo đang chạy trong context TechStoreDB).
 8. **Mở file script** → **Execute** (F5). Nếu bảng đã tồn tại trên Azure (trống), có thể cần xóa bảng hoặc chỉ chạy phần **INSERT** (hoặc chạy từ đầu trên database trống).
-9. Nếu trên Azure **chưa có cột PublicId**, chạy tiếp file `Scripts/AddPublicId_UpdateDatabase.sql`: mở file, đổi `USE TechStore` thành `USE TechStoreDB`, rồi Execute trên Azure SQL.
+9. Nếu trên Azure **chưa có cột PublicId**, chạy tiếp file `Scripts/AddPublicId_UpdateDatabase.sql`: mở file, đổi `USE TechStore` thành `USE [TechStoreDB]`, rồi Execute trên Azure SQL.
 
 **Lưu ý:** Nếu Azure đã có bảng (tạo tay hoặc từ EF) nhưng **chưa có dữ liệu**, có thể chỉ cần generate script **Data only** (INSERT) và chạy trên TechStoreDB. Thứ tự bảng: Users → Categories → Products → ProductSpecs → Orders → OrderItems (đúng foreign key).
 
@@ -150,10 +150,10 @@ Bạn đang có database **TechStore** trên SQL Server local (có bảng, có d
    - Hoàn tất export.
 
 2. **Import lên Azure:**
-   - Vào **Azure Portal** → **SQL databases** → **TechStoreDB** (hoặc server `techstore-prm393`).
+   - Vào **Azure Portal** → **SQL databases** → **TechStoreDB**.
    - Có thể dùng **Azure Data Studio** hoặc **SqlPackage**:
      - **SqlPackage** (command line):  
-       `SqlPackage /Action:Import /SourceFile:"C:\path\TechStore.bacpac" /TargetConnectionString:"Server=tcp:techstore-prm393.database.windows.net,1433;Database=TechStoreDB;User ID=prm393;Password=Passmon393;Encrypt=True;TrustServerCertificate=False;"`
+       `SqlPackage /Action:Import /SourceFile:"C:\path\TechStore.bacpac" /TargetConnectionString:"Server=tcp:YOUR_SQL_SERVER.database.windows.net,1433;Database=TechStoreDB;User ID=YOUR_DB_USER;Password=YOUR_DB_PASSWORD;Encrypt=True;TrustServerCertificate=False;"`
    - Hoặc trong **Azure Portal** → chọn server → **Import database** (nếu có), chọn file .bacpac và database đích **TechStoreDB**.
 
 3. Sau khi import xong, kiểm tra bảng và dữ liệu. Nếu thiếu cột **PublicId**, chạy `Scripts/AddPublicId_UpdateDatabase.sql` trên **TechStoreDB** (đổi `USE TechStore` thành `USE TechStoreDB`).
@@ -161,24 +161,5 @@ Bạn đang có database **TechStore** trên SQL Server local (có bảng, có d
 ### Sau khi đẩy xong
 
 - API (local hoặc App Service) đổi connection string trỏ tới Azure:
-  - `Server=tcp:techstore-prm393.database.windows.net,1433;Initial Catalog=TechStoreDB;...User ID=prm393;Password=Passmon393;...`
+  - `Server=tcp:YOUR_SQL_SERVER.database.windows.net,1433;Initial Catalog=TechStoreDB;...User ID=YOUR_DB_USER;Password=YOUR_DB_PASSWORD;...`
 - Test: mở Postman, gọi API (login, get categories, get products) để xác nhận dữ liệu từ Azure.
-
----
-
-## Azure SQL – TechStore PRM393 (đã tạo sẵn)
-
-- **Server:** `techstore-prm393.database.windows.net`
-- **Database:** `TechStoreDB`
-- **User ID:** `prm393`
-- **Password:** `Passmon393`
-
-**Connection string (dùng cho API / App Service / biến môi trường):**
-
-```
-Server=tcp:techstore-prm393.database.windows.net,1433;Initial Catalog=TechStoreDB;Persist Security Info=False;User ID=prm393;Password=Passmon393;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;
-```
-
-Trong **Azure App Service** hoặc **biến môi trường**, đặt:
-
-- `ConnectionStrings__DefaultConnection` = chuỗi trên (copy nguyên).
